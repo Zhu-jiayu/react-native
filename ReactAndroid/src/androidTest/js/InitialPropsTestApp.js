@@ -9,13 +9,12 @@
 
 'use strict';
 
-var React = require('React');
-var RecordingModule = require('NativeModules').InitialPropsRecordingModule;
-var Text = require('Text');
+const React = require('react');
+const {NativeModules, Text} = require('react-native');
 
 class InitialPropsTestApp extends React.Component {
   componentDidMount() {
-    RecordingModule.recordProps(this.props);
+    NativeModules.InitialPropsRecordingModule.recordProps(this.props);
   }
 
   render() {

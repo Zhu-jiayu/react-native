@@ -8,28 +8,23 @@
  * @flow
  */
 
-const DeprecatedViewPropTypes = require('DeprecatedViewPropTypes');
-const PropTypes = require('prop-types');
-const React = require('React');
-const StyleSheet = require('StyleSheet');
-const View = require('View');
+const React = require('react');
+const StyleSheet = require('../../StyleSheet/StyleSheet');
+const View = require('../View/View');
 
-const requireNativeComponent = require('requireNativeComponent');
+import type {ViewProps} from '../View/ViewPropTypes';
+import RCTMaskedViewNativeComponent from './RCTMaskedViewNativeComponent';
 
-import type {ViewProps} from 'ViewPropTypes';
-
-const RCTMaskedView = requireNativeComponent('RCTMaskedView');
-
-type Props = {
+type Props = $ReadOnly<{|
   ...ViewProps,
 
-  children: any,
+  children: React.Node,
   /**
    * Should be a React element to be rendered and applied as the
    * mask for the child element.
    */
   maskElement: React.Element<any>,
-};
+|}>;
 
 /**
  * Renders the child view with a mask specified in the `maskElement` prop.
@@ -68,14 +63,9 @@ type Props = {
  *
  */
 class MaskedViewIOS extends React.Component<Props> {
-  static propTypes = {
-    ...DeprecatedViewPropTypes,
-    maskElement: PropTypes.element.isRequired,
-  };
-
   _hasWarnedInvalidRenderMask = false;
 
-  render() {
+  render(): React.Node {
     const {maskElement, children, ...otherViewProps} = this.props;
 
     if (!React.isValidElement(maskElement)) {
@@ -90,12 +80,12 @@ class MaskedViewIOS extends React.Component<Props> {
     }
 
     return (
-      <RCTMaskedView {...otherViewProps}>
+      <RCTMaskedViewNativeComponent {...otherViewProps}>
         <View pointerEvents="none" style={StyleSheet.absoluteFill}>
           {maskElement}
         </View>
         {children}
-      </RCTMaskedView>
+      </RCTMaskedViewNativeComponent>
     );
   }
 }

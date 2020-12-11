@@ -10,10 +10,6 @@
 
 'use strict';
 
-const DeviceInfo = require('NativeModules').DeviceInfo;
+import NativeDeviceInfo from './NativeDeviceInfo';
 
-const invariant = require('fbjs/lib/invariant');
-
-invariant(DeviceInfo, 'DeviceInfo native module is not installed correctly');
-
-module.exports = DeviceInfo;
+module.exports = NativeDeviceInfo;

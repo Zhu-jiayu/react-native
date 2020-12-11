@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
@@ -7,26 +7,24 @@
 
 #import "RCTFabricSurface.h"
 
-#import <React/RCTSurfaceView+Internal.h>
-
 #import <mutex>
-#import <stdatomic.h>
 
 #import <React/RCTAssert.h>
-#import <React/RCTBridge.h>
 #import <React/RCTSurfaceDelegate.h>
 #import <React/RCTSurfaceRootView.h>
-#import <React/RCTSurfaceView.h>
 #import <React/RCTSurfaceTouchHandler.h>
+#import <React/RCTSurfaceView+Internal.h>
+#import <React/RCTSurfaceView.h>
 #import <React/RCTUIManagerUtils.h>
 #import <React/RCTUtils.h>
 
 #import "RCTSurfacePresenter.h"
-#import "RCTMountingManager.h"
+
+using namespace facebook::react;
 
 @implementation RCTFabricSurface {
   // Immutable
-  RCTSurfacePresenter *_surfacePresenter;
+  __weak RCTSurfacePresenter *_surfacePresenter;
   NSString *_moduleName;
 
   // Protected by the `_mutex`
@@ -35,6 +33,7 @@
   NSDictionary *_properties;
   CGSize _minimumSize;
   CGSize _maximumSize;
+  CGPoint _viewportOffset;
   CGSize _intrinsicSize;
 
   // The Main thread only
@@ -42,18 +41,8 @@
   RCTSurfaceTouchHandler *_Nullable _touchHandler;
 }
 
-- (instancetype)initWithBridge:(RCTBridge *)bridge
-                    moduleName:(NSString *)moduleName
-             initialProperties:(NSDictionary *)initialProperties
-{
-  RCTAssert(bridge.valid, @"Valid bridge is required to instanciate `RCTSurface`.");
-
-  self = [self initWithSurfacePresenter:bridge.surfacePresenter
-                             moduleName:moduleName
-                      initialProperties:initialProperties];
-
-  return self;
-}
+@synthesize delegate = _delegate;
+@synthesize rootTag = _rootTag;
 
 - (instancetype)initWithSurfacePresenter:(RCTSurfacePresenter *)surfacePresenter
                               moduleName:(NSString *)moduleName
@@ -66,47 +55,52 @@
     _rootTag = [RCTAllocateRootViewTag() integerValue];
 
     _minimumSize = CGSizeZero;
+
     _maximumSize = CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX);
 
     _stage = RCTSurfaceStageSurfaceDidInitialize;
-
-    _touchHandler = [RCTSurfaceTouchHandler new];
-
-    [self _run];
-
-    // TODO: This will be moved to RCTSurfacePresenter.
-    RCTBridge *bridge = surfacePresenter.bridge_DO_NOT_USE;
-
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(handleJavaScriptWillStartLoadingNotification:)
-                                                 name:RCTJavaScriptWillStartLoadingNotification
-                                               object:bridge];
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(handleJavaScriptDidLoadNotification:)
-                                                 name:RCTJavaScriptDidLoadNotification
-                                               object:bridge];
   }
 
   return self;
 }
 
-- (void)dealloc
+- (void)resetWithSurfacePresenter:(RCTSurfacePresenter *)surfacePresenter
 {
-  [[NSNotificationCenter defaultCenter] removeObserver:self];
-
-  [self _stop];
+  _surfacePresenter = surfacePresenter;
+  _stage = RCTSurfaceStageSurfaceDidInitialize;
+  _view = nil;
 }
 
-#pragma mark - Immutable Properties (no need to enforce synchonization)
+- (BOOL)start
+{
+  if (![self _setStage:RCTSurfaceStageStarted]) {
+    return NO;
+  }
+  [_surfacePresenter registerSurface:self];
+
+  return YES;
+}
+
+- (BOOL)stop
+{
+  if (![self _unsetStage:RCTSurfaceStageStarted]) {
+    return NO;
+  }
+
+  [_surfacePresenter unregisterSurface:self];
+  return YES;
+}
+
+- (void)dealloc
+{
+  [self stop];
+}
+
+#pragma mark - Immutable Properties (no need to enforce synchronization)
 
 - (NSString *)moduleName
 {
   return _moduleName;
-}
-
-- (NSNumber *)rootViewTag
-{
-  return @(_rootTag);
 }
 
 #pragma mark - Main-Threaded Routines
@@ -117,6 +111,7 @@
 
   if (!_view) {
     _view = [[RCTSurfaceView alloc] initWithSurface:(RCTSurface *)self];
+    _touchHandler = [RCTSurfaceTouchHandler new];
     [_touchHandler attachToView:_view];
   }
 
@@ -131,21 +126,37 @@
   return _stage;
 }
 
-- (void)_setStage:(RCTSurfaceStage)stage
+- (BOOL)_setStage:(RCTSurfaceStage)stage
+{
+  return [self _setStage:stage setOrUnset:YES];
+}
+
+- (BOOL)_unsetStage:(RCTSurfaceStage)stage
+{
+  return [self _setStage:stage setOrUnset:NO];
+}
+
+- (BOOL)_setStage:(RCTSurfaceStage)stage setOrUnset:(BOOL)setOrUnset
 {
   RCTSurfaceStage updatedStage;
   {
     std::lock_guard<std::mutex> lock(_mutex);
 
-    if (_stage & stage) {
-      return;
+    if (setOrUnset) {
+      updatedStage = (RCTSurfaceStage)(_stage | stage);
+    } else {
+      updatedStage = (RCTSurfaceStage)(_stage & ~stage);
     }
 
-    updatedStage = (RCTSurfaceStage)(_stage | stage);
+    if (updatedStage == _stage) {
+      return NO;
+    }
+
     _stage = updatedStage;
   }
 
   [self _propagateStageChange:updatedStage];
+  return YES;
 }
 
 - (void)_propagateStageChange:(RCTSurfaceStage)stage
@@ -182,57 +193,43 @@
     _properties = [properties copy];
   }
 
-  [self _run];
-}
-
-#pragma mark - Running
-
-- (void)_run
-{
-  [_surfacePresenter registerSurface:self];
-  [self _setStage:RCTSurfaceStageSurfaceDidRun];
-}
-
-- (void)_stop
-{
-  [_surfacePresenter unregisterSurface:self];
-  [self _setStage:RCTSurfaceStageSurfaceDidStop];
+  [_surfacePresenter setProps:properties surface:self];
 }
 
 #pragma mark - Layout
 
-- (CGSize)sizeThatFitsMinimumSize:(CGSize)minimumSize
-                      maximumSize:(CGSize)maximumSize
+- (CGSize)sizeThatFitsMinimumSize:(CGSize)minimumSize maximumSize:(CGSize)maximumSize
 {
-  return [_surfacePresenter sizeThatFitsMinimumSize:minimumSize
-                                        maximumSize:maximumSize
-                                            surface:self];
+  return [_surfacePresenter sizeThatFitsMinimumSize:minimumSize maximumSize:maximumSize surface:self];
 }
 
 #pragma mark - Size Constraints
 
 - (void)setSize:(CGSize)size
 {
-  [self setMinimumSize:size maximumSize:size];
+  [self setMinimumSize:size maximumSize:size viewportOffset:_viewportOffset];
 }
 
-- (void)setMinimumSize:(CGSize)minimumSize
-           maximumSize:(CGSize)maximumSize
+- (void)setMinimumSize:(CGSize)minimumSize maximumSize:(CGSize)maximumSize viewportOffset:(CGPoint)viewportOffset
 {
   {
     std::lock_guard<std::mutex> lock(_mutex);
-    if (CGSizeEqualToSize(minimumSize, _minimumSize) &&
-        CGSizeEqualToSize(maximumSize, _maximumSize)) {
+    if (CGSizeEqualToSize(minimumSize, _minimumSize) && CGSizeEqualToSize(maximumSize, _maximumSize) &&
+        CGPointEqualToPoint(viewportOffset, _viewportOffset)) {
       return;
     }
 
     _maximumSize = maximumSize;
     _minimumSize = minimumSize;
+    _viewportOffset = viewportOffset;
   }
 
-  return [_surfacePresenter setMinimumSize:minimumSize
-                               maximumSize:maximumSize
-                                   surface:self];
+  [_surfacePresenter setMinimumSize:minimumSize maximumSize:maximumSize surface:self];
+}
+
+- (void)setMinimumSize:(CGSize)minimumSize maximumSize:(CGSize)maximumSize
+{
+  [self setMinimumSize:minimumSize maximumSize:maximumSize viewportOffset:_viewportOffset];
 }
 
 - (CGSize)minimumSize
@@ -245,6 +242,12 @@
 {
   std::lock_guard<std::mutex> lock(_mutex);
   return _maximumSize;
+}
+
+- (CGPoint)viewportOffset
+{
+  std::lock_guard<std::mutex> lock(_mutex);
+  return _viewportOffset;
 }
 
 #pragma mark - intrinsicSize
@@ -275,47 +278,25 @@
 
 #pragma mark - Synchronous Waiting
 
-- (BOOL)synchronouslyWaitForStage:(RCTSurfaceStage)stage timeout:(NSTimeInterval)timeout
+- (BOOL)synchronouslyWaitFor:(NSTimeInterval)timeout
 {
-  // TODO: Not supported yet.
-  return NO;
+  return [_surfacePresenter synchronouslyWaitSurface:self timeout:timeout];
 }
 
-#pragma mark - Bridge events
+#pragma mark - Deprecated
 
-- (void)handleJavaScriptWillStartLoadingNotification:(NSNotification *)notification
+- (instancetype)initWithBridge:(RCTBridge *)bridge
+                    moduleName:(NSString *)moduleName
+             initialProperties:(NSDictionary *)initialProperties
 {
-  // TODO: Move the bridge lifecycle handling up to the RCTSurfacePresenter.
-
-  RCTAssertMainQueue();
-
-  // Reset states because the bridge is reloading. This is similar to initialization phase.
-  _stage = RCTSurfaceStageSurfaceDidInitialize;
-  _view = nil;
-  _touchHandler = [RCTSurfaceTouchHandler new];
-  [self _setStage:RCTSurfaceStageBridgeDidLoad];
+  return [self initWithSurfacePresenter:bridge.surfacePresenter
+                             moduleName:moduleName
+                      initialProperties:initialProperties];
 }
 
-- (void)handleJavaScriptDidLoadNotification:(NSNotification *)notification
+- (NSNumber *)rootViewTag
 {
-  // TODO: Move the bridge lifecycle handling up to the RCTSurfacePresenter.
-
-  // Note: this covers both JS reloads and initial load after the bridge starts.
-  // When it's not a reload, surface should already be running since we run it immediately in the initializer, so do
-  // nothing.
-  // When it's a reload, we rely on the `RCTJavaScriptWillStartLoadingNotification` notification to reset the stage,
-  // then we need to run the surface and update its size.
-  if (!RCTSurfaceStageIsRunning(_stage)) {
-    [self _setStage:RCTSurfaceStageModuleDidLoad];
-    [self _run];
-
-    // After a reload surfacePresenter needs to know the last min/max size for this surface, because the surface hosting
-    // view was already attached to the ViewController's view.
-    // TODO: Find a better automatic way.
-    [_surfacePresenter setMinimumSize:_minimumSize
-                          maximumSize:_maximumSize
-                              surface:self];
-  }
+  return @(_rootTag);
 }
 
 @end

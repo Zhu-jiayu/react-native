@@ -9,12 +9,14 @@
 
 'use strict';
 
-var React = require('React');
-var StyleSheet = require('StyleSheet');
-var View = require('View');
-var Text = require('Text');
-var PanResponder = require('PanResponder');
-var ScrollView = require('ScrollView');
+const React = require('react');
+const {
+  PanResponder,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} = require('react-native');
 
 class JSResponderTestApp extends React.Component {
   _handleMoveShouldSetPanResponder = (e, gestureState) => {
@@ -28,8 +30,8 @@ class JSResponderTestApp extends React.Component {
   }
 
   render() {
-    var views = [];
-    for (var i = 0; i < 100; i++) {
+    const views = [];
+    for (let i = 0; i < 100; i++) {
       views[i] = (
         <View key={i} style={styles.row} collapsable={false}>
           <Text>I am row {i}</Text>
@@ -49,7 +51,7 @@ class JSResponderTestApp extends React.Component {
   }
 }
 
-var styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
   },

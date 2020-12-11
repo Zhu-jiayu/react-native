@@ -5,42 +5,57 @@
  * LICENSE file in the root directory of this source tree.
  *
  * @format
+ * @flow strict-local
  */
 
 'use strict';
 
+const RCTNativeAppEventEmitter = require('react-native/Libraries/EventEmitter/RCTNativeAppEventEmitter');
 const React = require('react');
-const createReactClass = require('create-react-class');
 const ReactNative = require('react-native');
-const RCTNativeAppEventEmitter = require('RCTNativeAppEventEmitter');
-const Subscribable = require('Subscribable');
 const {View} = ReactNative;
 
 const {TestModule} = ReactNative.NativeModules;
+import {type EventSubscription} from 'react-native/Libraries/vendor/emitter/EventEmitter';
 
 const reactViewWidth = 111;
 const reactViewHeight = 222;
 
 let finalState = false;
 
-const SizeFlexibilityUpdateTest = createReactClass({
-  displayName: 'SizeFlexibilityUpdateTest',
-  mixins: [Subscribable.Mixin],
+type Props = $ReadOnly<{|
+  width: boolean,
+  height: boolean,
+  both: boolean,
+  none: boolean,
+|}>;
 
-  UNSAFE_componentWillMount: function() {
-    this.addListenerOn(
-      RCTNativeAppEventEmitter,
+class SizeFlexibilityUpdateTest extends React.Component<Props> {
+  _subscription: ?EventSubscription = null;
+
+  UNSAFE_componentWillMount() {
+    this._subscription = RCTNativeAppEventEmitter.addListener(
       'rootViewDidChangeIntrinsicSize',
       this.rootViewDidChangeIntrinsicSize,
     );
-  },
+  }
 
-  markPassed: function() {
+  componentWillUnmount() {
+    if (this._subscription != null) {
+      this._subscription.remove();
+    }
+  }
+
+  markPassed: () => void = () => {
     TestModule.markTestPassed(true);
     finalState = true;
-  },
+  };
 
-  rootViewDidChangeIntrinsicSize: function(intrinsicSize) {
+  rootViewDidChangeIntrinsicSize: (intrinsicSize: {
+    height: number,
+    width: number,
+    ...
+  }) => void = (intrinsicSize: {width: number, height: number, ...}) => {
     if (finalState) {
       // If a test reaches its final state, it is not expected to do anything more
       TestModule.markTestPassed(false);
@@ -83,13 +98,11 @@ const SizeFlexibilityUpdateTest = createReactClass({
         return;
       }
     }
-  },
+  };
 
-  render() {
+  render(): React.Node {
     return <View style={{height: reactViewHeight, width: reactViewWidth}} />;
-  },
-});
-
-SizeFlexibilityUpdateTest.displayName = 'SizeFlexibilityUpdateTest';
+  }
+}
 
 module.exports = SizeFlexibilityUpdateTest;

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
@@ -8,15 +8,16 @@
 package com.facebook.react.testing;
 
 import android.annotation.SuppressLint;
+import androidx.annotation.Nullable;
 import com.facebook.react.ReactPackage;
 import com.facebook.react.bridge.JavaScriptExecutorFactory;
 import com.facebook.react.bridge.JavaScriptModule;
 import com.facebook.react.bridge.NativeModule;
+import com.facebook.react.bridge.NativeModuleCallExceptionHandler;
 import com.facebook.react.uimanager.ViewManager;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import javax.annotation.Nullable;
 
 /**
  * A spec that allows a test to add additional NativeModules/JS modules to the ReactInstance. This
@@ -27,10 +28,12 @@ import javax.annotation.Nullable;
 public class ReactInstanceSpecForTest {
 
   private final List<NativeModule> mNativeModules =
-    new ArrayList<NativeModule>(Arrays.asList(new FakeWebSocketModule()));
+      new ArrayList<NativeModule>(Arrays.asList(new FakeWebSocketModule()));
   private final List<Class<? extends JavaScriptModule>> mJSModuleSpecs = new ArrayList<>();
   private final List<ViewManager> mViewManagers = new ArrayList<>();
   private final ArrayList<ReactPackage> mReactPackages = new ArrayList<>();
+  @Nullable private NativeModuleCallExceptionHandler mNativeModuleCallExceptionHandler = null;
+  @Nullable private FabricUIManagerFactory mFabricUIManagerFactory = null;
   @Nullable private JavaScriptExecutorFactory mJavaScriptExecutorFactory = null;
 
   public ReactInstanceSpecForTest addNativeModule(NativeModule module) {
@@ -38,7 +41,18 @@ public class ReactInstanceSpecForTest {
     return this;
   }
 
-  public ReactInstanceSpecForTest setJavaScriptExecutorFactory(JavaScriptExecutorFactory javaScriptExecutorFactory) {
+  public ReactInstanceSpecForTest setNativeModuleCallExceptionHandler(
+      NativeModuleCallExceptionHandler nativeModuleCallExceptionHandler) {
+    mNativeModuleCallExceptionHandler = nativeModuleCallExceptionHandler;
+    return this;
+  }
+
+  public NativeModuleCallExceptionHandler getNativeModuleCallExceptionHandler() {
+    return mNativeModuleCallExceptionHandler;
+  }
+
+  public ReactInstanceSpecForTest setJavaScriptExecutorFactory(
+      JavaScriptExecutorFactory javaScriptExecutorFactory) {
     mJavaScriptExecutorFactory = javaScriptExecutorFactory;
     return this;
   }
@@ -50,6 +64,17 @@ public class ReactInstanceSpecForTest {
     }
     mReactPackages.add(reactPackage);
     return this;
+  }
+
+  public ReactInstanceSpecForTest setFabricUIManagerFactory(
+      @Nullable FabricUIManagerFactory fabricUIManagerFactory) {
+    mFabricUIManagerFactory = fabricUIManagerFactory;
+    return this;
+  }
+
+  @Nullable
+  public FabricUIManagerFactory getFabricUIManagerFactory() {
+    return mFabricUIManagerFactory;
   }
 
   public ReactInstanceSpecForTest addPackages(List<ReactPackage> reactPackages) {

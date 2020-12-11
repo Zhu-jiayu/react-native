@@ -10,56 +10,38 @@
 
 'use strict';
 
-const Dimensions = require('Dimensions');
-const ElementBox = require('ElementBox');
-const PropTypes = require('prop-types');
-const React = require('React');
-const StyleSheet = require('StyleSheet');
-const UIManager = require('UIManager');
-const View = require('View');
+const Dimensions = require('../Utilities/Dimensions');
+const ElementBox = require('./ElementBox');
+const React = require('react');
+const StyleSheet = require('../StyleSheet/StyleSheet');
+const View = require('../Components/View/View');
 
-type EventLike = {
-  nativeEvent: Object,
-};
+import type {ViewStyleProp} from '../StyleSheet/StyleSheet';
+import type {PressEvent} from '../Types/CoreEventTypes';
 
-class InspectorOverlay extends React.Component<{
-  inspected?: {
-    frame?: Object,
-    style?: any,
-  },
-  inspectedViewTag?: number,
-  onTouchViewTag: (tag: number, frame: Object, pointerY: number) => void,
-}> {
-  static propTypes = {
-    inspected: PropTypes.shape({
-      frame: PropTypes.object,
-      style: PropTypes.any,
-    }),
-    inspectedViewTag: PropTypes.number,
-    onTouchViewTag: PropTypes.func.isRequired,
-  };
+type Inspected = $ReadOnly<{|
+  frame?: Object,
+  style?: ViewStyleProp,
+|}>;
 
-  findViewForTouchEvent = (e: EventLike) => {
+type Props = $ReadOnly<{|
+  inspected?: Inspected,
+  onTouchPoint: (locationX: number, locationY: number) => void,
+|}>;
+
+class InspectorOverlay extends React.Component<Props> {
+  findViewForTouchEvent: (e: PressEvent) => void = (e: PressEvent) => {
     const {locationX, locationY} = e.nativeEvent.touches[0];
-    UIManager.findSubviewIn(
-      this.props.inspectedViewTag,
-      [locationX, locationY],
-      (nativeViewTag, left, top, width, height) => {
-        this.props.onTouchViewTag(
-          nativeViewTag,
-          {left, top, width, height},
-          locationY,
-        );
-      },
-    );
+
+    this.props.onTouchPoint(locationX, locationY);
   };
 
-  shouldSetResponser = (e: EventLike): boolean => {
+  shouldSetResponser: (e: PressEvent) => boolean = (e: PressEvent): boolean => {
     this.findViewForTouchEvent(e);
     return true;
   };
 
-  render() {
+  render(): React.Node {
     let content = null;
     if (this.props.inspected) {
       content = (
@@ -74,6 +56,7 @@ class InspectorOverlay extends React.Component<{
       <View
         onStartShouldSetResponder={this.shouldSetResponser}
         onResponderMove={this.findViewForTouchEvent}
+        nativeID="inspectorOverlay" /* TODO: T68258846. */
         style={[styles.inspector, {height: Dimensions.get('window').height}]}>
         {content}
       </View>

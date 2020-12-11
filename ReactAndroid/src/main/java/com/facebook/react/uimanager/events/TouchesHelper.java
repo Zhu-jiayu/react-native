@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
@@ -8,15 +8,12 @@
 package com.facebook.react.uimanager.events;
 
 import android.view.MotionEvent;
-
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.uimanager.PixelUtil;
 
-/**
- * Class responsible for generating catalyst touch events based on android {@link MotionEvent}.
- */
+/** Class responsible for generating catalyst touch events based on android {@link MotionEvent}. */
 public class TouchesHelper {
 
   public static final String TARGET_KEY = "target";
@@ -73,8 +70,8 @@ public class TouchesHelper {
   }
 
   /**
-   * Generate and send touch event to RCTEventEmitter JS module associated with the given
-   * {@param context}. Touch event can encode multiple concurrent touches (pointers).
+   * Generate and send touch event to RCTEventEmitter JS module associated with the given {@param
+   * context}. Touch event can encode multiple concurrent touches (pointers).
    *
    * @param rctEventEmitter Event emitter used to execute JS module call
    * @param type type of the touch event (see {@link TouchEventType})
@@ -103,9 +100,6 @@ public class TouchesHelper {
       throw new RuntimeException("Unknown touch type: " + type);
     }
 
-    rctEventEmitter.receiveTouches(
-        type.getJSEventName(),
-        pointers,
-        changedIndices);
+    rctEventEmitter.receiveTouches(TouchEventType.getJSEventName(type), pointers, changedIndices);
   }
 }

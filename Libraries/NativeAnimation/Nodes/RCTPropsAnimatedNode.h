@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
@@ -7,14 +7,17 @@
 
 #import "RCTAnimatedNode.h"
 
-@class RCTUIManager;
+#import <React/RCTSurfacePresenterStub.h>
+
+@class RCTBridge;
 @class RCTViewPropertyMapper;
 
 @interface RCTPropsAnimatedNode : RCTAnimatedNode
 
 - (void)connectToView:(NSNumber *)viewTag
              viewName:(NSString *)viewName
-            uiManager:(RCTUIManager *)uiManager;
+               bridge:(RCTBridge *)bridge
+     surfacePresenter:(id<RCTSurfacePresenterStub>)surfacePresenter;
 
 - (void)disconnectFromView:(NSNumber *)viewTag;
 

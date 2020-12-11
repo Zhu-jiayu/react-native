@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
@@ -7,114 +7,199 @@
 
 #import "RCTScheduler.h"
 
-#import <fabric/imagemanager/ImageManager.h>
-#import <fabric/uimanager/ContextContainer.h>
-#import <fabric/uimanager/Scheduler.h>
-#import <fabric/uimanager/SchedulerDelegate.h>
-#import <React/RCTImageLoader.h>
-#import <React/RCTBridge+Private.h>
+#import <react/renderer/animations/LayoutAnimationDriver.h>
+#import <react/renderer/componentregistry/ComponentDescriptorFactory.h>
+#import <react/renderer/debug/SystraceSection.h>
+#import <react/renderer/scheduler/Scheduler.h>
+#import <react/renderer/scheduler/SchedulerDelegate.h>
+#include <react/utils/RunLoopObserver.h>
 
-#import "MainRunLoopEventBeat.h"
-#import "MessageQueueEventBeat.h"
+#import <React/RCTFollyConvert.h>
+
 #import "RCTConversions.h"
-
-@interface RCTBridge ()
-
-- (std::shared_ptr<facebook::react::MessageQueueThread>)jsMessageThread;
-
-@end
 
 using namespace facebook::react;
 
-class SchedulerDelegateProxy: public SchedulerDelegate {
-public:
-  SchedulerDelegateProxy(void *scheduler): scheduler_(scheduler) {}
+class SchedulerDelegateProxy : public SchedulerDelegate {
+ public:
+  SchedulerDelegateProxy(void *scheduler) : scheduler_(scheduler) {}
 
-  void schedulerDidFinishTransaction(Tag rootTag, const ShadowViewMutationList &mutations) override {
+  void schedulerDidFinishTransaction(MountingCoordinator::Shared const &mountingCoordinator) override
+  {
     RCTScheduler *scheduler = (__bridge RCTScheduler *)scheduler_;
-    [scheduler.delegate schedulerDidFinishTransaction:mutations rootTag:rootTag];
+    [scheduler.delegate schedulerDidFinishTransaction:mountingCoordinator];
   }
 
-  void schedulerDidRequestPreliminaryViewAllocation(ComponentName componentName) override {
-    RCTScheduler *scheduler = (__bridge RCTScheduler *)scheduler_;
-    [scheduler.delegate schedulerDidRequestPreliminaryViewAllocationWithComponentName:RCTNSStringFromString(componentName, NSASCIIStringEncoding)];
+  void schedulerDidRequestPreliminaryViewAllocation(SurfaceId surfaceId, const ShadowView &shadowView) override
+  {
+    // Does nothing.
+    // Preemptive allocation of native views on iOS does not require this call.
   }
 
-private:
+  void schedulerDidDispatchCommand(
+      const ShadowView &shadowView,
+      const std::string &commandName,
+      const folly::dynamic args) override
+  {
+    RCTScheduler *scheduler = (__bridge RCTScheduler *)scheduler_;
+    [scheduler.delegate schedulerDidDispatchCommand:shadowView commandName:commandName args:args];
+  }
+
+  void schedulerDidSetJSResponder(
+      SurfaceId surfaceId,
+      const ShadowView &shadowView,
+      const ShadowView &initialShadowView,
+      bool blockNativeResponder) override
+  {
+    // Does nothing for now.
+  }
+
+  void schedulerDidClearJSResponder() override
+  {
+    // Does nothing for now.
+  }
+
+ private:
+  void *scheduler_;
+};
+
+class LayoutAnimationDelegateProxy : public LayoutAnimationStatusDelegate, public RunLoopObserver::Delegate {
+ public:
+  LayoutAnimationDelegateProxy(void *scheduler) : scheduler_(scheduler) {}
+  virtual ~LayoutAnimationDelegateProxy() {}
+
+  void onAnimationStarted() override
+  {
+    RCTScheduler *scheduler = (__bridge RCTScheduler *)scheduler_;
+    [scheduler onAnimationStarted];
+  }
+
+  /**
+   * Called when the LayoutAnimation engine completes all pending animations.
+   */
+  void onAllAnimationsComplete() override
+  {
+    RCTScheduler *scheduler = (__bridge RCTScheduler *)scheduler_;
+    [scheduler onAllAnimationsComplete];
+  }
+
+  void activityDidChange(RunLoopObserver::Delegate const *delegate, RunLoopObserver::Activity activity) const
+      noexcept override
+  {
+    RCTScheduler *scheduler = (__bridge RCTScheduler *)scheduler_;
+    [scheduler animationTick];
+  }
+
+ private:
   void *scheduler_;
 };
 
 @implementation RCTScheduler {
-  std::shared_ptr<Scheduler> _scheduler;
+  std::unique_ptr<Scheduler> _scheduler;
+  std::shared_ptr<LayoutAnimationDriver> _animationDriver;
   std::shared_ptr<SchedulerDelegateProxy> _delegateProxy;
+  std::shared_ptr<LayoutAnimationDelegateProxy> _layoutAnimationDelegateProxy;
+  RunLoopObserver::Unique _uiRunLoopObserver;
+  BOOL _layoutAnimationsEnabled;
 }
 
-- (instancetype)init
+- (instancetype)initWithToolbox:(facebook::react::SchedulerToolbox)toolbox
 {
   if (self = [super init]) {
+    auto reactNativeConfig =
+        toolbox.contextContainer->at<std::shared_ptr<const ReactNativeConfig>>("ReactNativeConfig");
+    _layoutAnimationsEnabled = reactNativeConfig->getBool("react_fabric:enabled_layout_animations_ios");
+
     _delegateProxy = std::make_shared<SchedulerDelegateProxy>((__bridge void *)self);
 
-    RCTBridge *bridge = [RCTBridge currentBridge];
+    if (_layoutAnimationsEnabled) {
+      _layoutAnimationDelegateProxy = std::make_shared<LayoutAnimationDelegateProxy>((__bridge void *)self);
+      _animationDriver =
+          std::make_shared<LayoutAnimationDriver>(toolbox.runtimeExecutor, _layoutAnimationDelegateProxy.get());
+      _uiRunLoopObserver =
+          toolbox.mainRunLoopObserverFactory(RunLoopObserver::Activity::BeforeWaiting, _layoutAnimationDelegateProxy);
+      _uiRunLoopObserver->setDelegate(_layoutAnimationDelegateProxy.get());
+    }
 
-    SharedContextContainer contextContainer = std::make_shared<ContextContainer>();
-
-    EventBeatFactory synchronousBeatFactory = [bridge]() {
-      return std::make_unique<MainRunLoopEventBeat>(bridge.jsMessageThread);
-    };
-
-    EventBeatFactory asynchronousBeatFactory = [bridge]() {
-      return std::make_unique<MessageQueueEventBeat>(bridge.jsMessageThread);
-    };
-
-    contextContainer->registerInstance<EventBeatFactory>(synchronousBeatFactory, "synchronous");
-    contextContainer->registerInstance<EventBeatFactory>(asynchronousBeatFactory, "asynchronous");
-
-    void *imageLoader = (__bridge void *)[[RCTBridge currentBridge] imageLoader];
-    contextContainer->registerInstance(std::make_shared<ImageManager>(imageLoader));
-
-    _scheduler = std::make_shared<Scheduler>(contextContainer);
-    _scheduler->setDelegate(_delegateProxy.get());
+    _scheduler = std::make_unique<Scheduler>(
+        toolbox, (_animationDriver ? _animationDriver.get() : nullptr), _delegateProxy.get());
   }
 
   return self;
 }
 
+- (void)animationTick
+{
+  _scheduler->animationTick();
+}
+
 - (void)dealloc
 {
-  _scheduler->setDelegate(nullptr);
+  if (_animationDriver) {
+    _animationDriver->setLayoutAnimationStatusDelegate(nullptr);
+  }
+  _animationDriver = nullptr;
 }
 
-- (void)registerRootTag:(ReactTag)tag
+- (void)startSurfaceWithSurfaceId:(SurfaceId)surfaceId
+                       moduleName:(NSString *)moduleName
+                     initialProps:(NSDictionary *)initialProps
+                layoutConstraints:(LayoutConstraints)layoutConstraints
+                    layoutContext:(LayoutContext)layoutContext
 {
-  _scheduler->registerRootTag(tag);
+  SystraceSection s("-[RCTScheduler startSurfaceWithSurfaceId:...]");
+
+  auto props = convertIdToFollyDynamic(initialProps);
+  _scheduler->startSurface(
+      surfaceId, RCTStringFromNSString(moduleName), props, layoutConstraints, layoutContext, _animationDriver);
+  _scheduler->renderTemplateToSurface(
+      surfaceId, props.getDefault("navigationConfig").getDefault("initialUITemplate", "").getString());
 }
 
-- (void)unregisterRootTag:(ReactTag)tag
+- (void)stopSurfaceWithSurfaceId:(SurfaceId)surfaceId
 {
-  _scheduler->unregisterRootTag(tag);
+  SystraceSection s("-[RCTScheduler stopSurfaceWithSurfaceId:]");
+  _scheduler->stopSurface(surfaceId);
 }
 
-- (CGSize)measureWithLayoutConstraints:(LayoutConstraints)layoutConstraints
-                         layoutContext:(LayoutContext)layoutContext
-                               rootTag:(ReactTag)rootTag
-{
-  return RCTCGSizeFromSize(_scheduler->measure(rootTag, layoutConstraints, layoutContext));
-}
-
-- (void)constraintLayoutWithLayoutConstraints:(LayoutConstraints)layoutConstraints
+- (CGSize)measureSurfaceWithLayoutConstraints:(LayoutConstraints)layoutConstraints
                                 layoutContext:(LayoutContext)layoutContext
-                                      rootTag:(ReactTag)rootTag
+                                    surfaceId:(SurfaceId)surfaceId
 {
-  _scheduler->constraintLayout(rootTag, layoutConstraints, layoutContext);
+  SystraceSection s("-[RCTScheduler measureSurfaceWithLayoutConstraints:]");
+  return RCTCGSizeFromSize(_scheduler->measureSurface(surfaceId, layoutConstraints, layoutContext));
 }
 
-@end
-
-@implementation RCTScheduler (Deprecated)
-
-- (std::shared_ptr<FabricUIManager>)uiManager_DO_NOT_USE
+- (void)constraintSurfaceLayoutWithLayoutConstraints:(LayoutConstraints)layoutConstraints
+                                       layoutContext:(LayoutContext)layoutContext
+                                           surfaceId:(SurfaceId)surfaceId
 {
-  return _scheduler->getUIManager_DO_NOT_USE();
+  SystraceSection s("-[RCTScheduler constraintSurfaceLayoutWithLayoutConstraints:]");
+  _scheduler->constraintSurfaceLayout(surfaceId, layoutConstraints, layoutContext);
+}
+
+- (ComponentDescriptor const *)findComponentDescriptorByHandle_DO_NOT_USE_THIS_IS_BROKEN:(ComponentHandle)handle
+{
+  return _scheduler->findComponentDescriptorByHandle_DO_NOT_USE_THIS_IS_BROKEN(handle);
+}
+
+- (MountingCoordinator::Shared)mountingCoordinatorWithSurfaceId:(SurfaceId)surfaceId
+{
+  return _scheduler->findMountingCoordinator(surfaceId);
+}
+
+- (void)onAnimationStarted
+{
+  if (_uiRunLoopObserver) {
+    _uiRunLoopObserver->enable();
+  }
+}
+
+- (void)onAllAnimationsComplete
+{
+  if (_uiRunLoopObserver) {
+    _uiRunLoopObserver->disable();
+  }
 }
 
 @end

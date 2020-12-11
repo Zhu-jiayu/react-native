@@ -30,20 +30,11 @@ fi
 
 ./configure --host arm-apple-darwin
 
-# Fix build for tvOS
 cat << EOF >> src/config.h
-
 /* Add in so we have Apple Target Conditionals */
 #ifdef __APPLE__
 #include <TargetConditionals.h>
 #include <Availability.h>
-#endif
-
-/* Special configuration for AppleTVOS */
-#if TARGET_OS_TV
-#undef HAVE_SYSCALL_H
-#undef HAVE_SYS_SYSCALL_H
-#undef OS_MACOSX
 #endif
 
 /* Special configuration for ucontext */
@@ -55,3 +46,12 @@ cat << EOF >> src/config.h
 #define PC_FROM_UCONTEXT uc_mcontext->__ss.__eip
 #endif
 EOF
+
+# Prepare exported header include
+EXPORTED_INCLUDE_DIR="exported/glog"
+mkdir -p exported/glog
+cp -f src/glog/log_severity.h "$EXPORTED_INCLUDE_DIR/"
+cp -f src/glog/logging.h "$EXPORTED_INCLUDE_DIR/"
+cp -f src/glog/raw_logging.h "$EXPORTED_INCLUDE_DIR/"
+cp -f src/glog/stl_logging.h "$EXPORTED_INCLUDE_DIR/"
+cp -f src/glog/vlog_is_on.h "$EXPORTED_INCLUDE_DIR/"

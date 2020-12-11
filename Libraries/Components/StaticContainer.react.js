@@ -5,12 +5,12 @@
  * LICENSE file in the root directory of this source tree.
  *
  * @format
- * @flow
+ * @flow strict-local
  */
 
 'use strict';
 
-const React = require('React');
+const React = require('react');
 
 /**
  * Renders static content efficiently by allowing React to short-circuit the
@@ -27,16 +27,24 @@ const React = require('React');
  * Typically, you will not need to use this component and should opt for normal
  * React reconciliation.
  */
-class StaticContainer extends React.Component<Object> {
-  shouldComponentUpdate(nextProps: Object): boolean {
+
+type Props = $ReadOnly<{|
+  /**
+   * Whether or not this component should update.
+   */
+  shouldUpdate?: ?boolean,
+  /**
+   * Content short-circuited by React reconciliation process.
+   */
+  children: React.Node,
+|}>;
+class StaticContainer extends React.Component<Props> {
+  shouldComponentUpdate(nextProps: Props): boolean {
     return !!nextProps.shouldUpdate;
   }
 
-  render() {
-    const child = this.props.children;
-    return child === null || child === false
-      ? null
-      : React.Children.only(child);
+  render(): React.Node {
+    return this.props.children;
   }
 }
 

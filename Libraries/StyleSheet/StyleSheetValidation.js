@@ -10,11 +10,11 @@
 
 'use strict';
 
-const ImageStylePropTypes = require('ImageStylePropTypes');
-const TextStylePropTypes = require('TextStylePropTypes');
-const ViewStylePropTypes = require('ViewStylePropTypes');
+const DeprecatedImageStylePropTypes = require('../DeprecatedPropTypes/DeprecatedImageStylePropTypes');
+const DeprecatedTextStylePropTypes = require('../DeprecatedPropTypes/DeprecatedTextStylePropTypes');
+const DeprecatedViewStylePropTypes = require('../DeprecatedPropTypes/DeprecatedViewStylePropTypes');
 
-const invariant = require('fbjs/lib/invariant');
+const invariant = require('invariant');
 
 // Hardcoded because this is a legit case but we don't want to load it from
 // a private API. We might likely want to unify style sheet creation with how it
@@ -51,7 +51,11 @@ class StyleSheetValidation {
     if (!__DEV__ || global.__RCTProfileIsProfiling) {
       return;
     }
-    for (const prop in styles[name]) {
+    if (!styles[name]) {
+      return;
+    }
+    const styleProps = Object.keys(styles[name]);
+    for (const prop of styleProps) {
       StyleSheetValidation.validateStyleProp(
         prop,
         styles[name],
@@ -60,6 +64,9 @@ class StyleSheetValidation {
     }
   }
 
+  /* $FlowFixMe(>=0.85.0 site=react_native_fb) This comment suppresses an error
+   * found when Flow v0.85 was deployed. To see the error, delete this comment
+   * and run Flow. */
   static addValidStylePropTypes(stylePropTypes) {
     if (!__DEV__ || global.__RCTProfileIsProfiling) {
       return;
@@ -85,9 +92,9 @@ const styleError = function(message1, style, caller?, message2?) {
 const allStylePropTypes = {};
 
 if (__DEV__ && !global.__RCTProfileIsProfiling) {
-  StyleSheetValidation.addValidStylePropTypes(ImageStylePropTypes);
-  StyleSheetValidation.addValidStylePropTypes(TextStylePropTypes);
-  StyleSheetValidation.addValidStylePropTypes(ViewStylePropTypes);
+  StyleSheetValidation.addValidStylePropTypes(DeprecatedImageStylePropTypes);
+  StyleSheetValidation.addValidStylePropTypes(DeprecatedTextStylePropTypes);
+  StyleSheetValidation.addValidStylePropTypes(DeprecatedViewStylePropTypes);
 }
 
 module.exports = StyleSheetValidation;

@@ -9,15 +9,19 @@
 
 'use strict';
 
-var BatchedBridge = require('BatchedBridge');
-var React = require('React');
-var RecordingModule = require('NativeModules')
-  .SwipeRefreshLayoutRecordingModule;
-var ScrollView = require('ScrollView');
-var RefreshControl = require('RefreshControl');
-var Text = require('Text');
-var TouchableWithoutFeedback = require('TouchableWithoutFeedback');
-var View = require('View');
+const React = require('react');
+const {
+  NativeModules,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableWithoutFeedback,
+  View,
+} = require('react-native');
+const BatchedBridge = require('react-native/Libraries/BatchedBridge/BatchedBridge');
+
+const {SwipeRefreshLayoutRecordingModule: RecordingModule} = NativeModules;
 
 class Row extends React.Component {
   state = {
@@ -39,7 +43,7 @@ class Row extends React.Component {
   };
 }
 
-var app = null;
+let app = null;
 
 class SwipeRefreshLayoutTestApp extends React.Component {
   state = {
@@ -51,16 +55,16 @@ class SwipeRefreshLayoutTestApp extends React.Component {
   }
 
   render() {
-    var rows = [];
-    for (var i = 0; i < this.state.rows; i++) {
+    const rows = [];
+    for (let i = 0; i < this.state.rows; i++) {
       rows.push(<Row key={i} />);
     }
     return (
       <ScrollView
-        style={{flex: 1}}
+        style={styles.container}
         refreshControl={
           <RefreshControl
-            style={{flex: 1}}
+            style={styles.content}
             refreshing={false}
             onRefresh={() => RecordingModule.onRefresh()}
           />
@@ -71,7 +75,7 @@ class SwipeRefreshLayoutTestApp extends React.Component {
   }
 }
 
-var SwipeRefreshLayoutTestModule = {
+const SwipeRefreshLayoutTestModule = {
   SwipeRefreshLayoutTestApp,
   setRows: function(rows) {
     if (app != null) {
@@ -84,5 +88,14 @@ BatchedBridge.registerCallableModule(
   'SwipeRefreshLayoutTestModule',
   SwipeRefreshLayoutTestModule,
 );
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+  },
+});
 
 module.exports = SwipeRefreshLayoutTestModule;

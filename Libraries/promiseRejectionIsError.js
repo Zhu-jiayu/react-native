@@ -5,15 +5,12 @@
  * LICENSE file in the root directory of this source tree.
  *
  * @format
- * @flow
+ * @flow strict
  */
 
 'use strict';
 
-require('Promise'); // make sure the default rejection handler is installed
-/* $FlowFixMe(>=0.54.0 site=react_native_oss) This comment suppresses an error
- * found when Flow v0.54 was deployed. To see the error delete this comment and
- * run Flow. */
+require('./Promise'); // make sure the default rejection handler is installed
 const rejectionTracking = require('promise/setimmediate/rejection-tracking');
 
 module.exports = () => {

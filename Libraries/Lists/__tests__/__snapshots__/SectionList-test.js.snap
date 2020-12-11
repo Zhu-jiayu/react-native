@@ -27,34 +27,18 @@ exports[`SectionList rendering empty section headers is fine 1`] = `
   onContentSizeChange={[Function]}
   onEndReachedThreshold={2}
   onLayout={[Function]}
+  onMomentumScrollBegin={[Function]}
   onMomentumScrollEnd={[Function]}
   onScroll={[Function]}
   onScrollBeginDrag={[Function]}
   onScrollEndDrag={[Function]}
   renderItem={[Function]}
-  renderSectionHeader={[Function]}
   scrollEventThrottle={50}
-  sections={
-    Array [
-      Object {
-        "data": Array [
-          Object {
-            "key": "i1",
-          },
-          Object {
-            "key": "i2",
-          },
-        ],
-        "key": "s1",
-      },
-    ]
-  }
   stickyHeaderIndices={
     Array [
       0,
     ]
   }
-  stickySectionHeadersEnabled={true}
   updateCellsBatchingPeriod={50}
   windowSize={21}
 >
@@ -107,28 +91,18 @@ exports[`SectionList renders a footer when there is no data 1`] = `
   onContentSizeChange={[Function]}
   onEndReachedThreshold={2}
   onLayout={[Function]}
+  onMomentumScrollBegin={[Function]}
   onMomentumScrollEnd={[Function]}
   onScroll={[Function]}
   onScrollBeginDrag={[Function]}
   onScrollEndDrag={[Function]}
   renderItem={[Function]}
-  renderSectionFooter={[Function]}
-  renderSectionHeader={[Function]}
   scrollEventThrottle={50}
-  sections={
-    Array [
-      Object {
-        "data": Array [],
-        "key": "s1",
-      },
-    ]
-  }
   stickyHeaderIndices={
     Array [
       0,
     ]
   }
-  stickySectionHeadersEnabled={true}
   updateCellsBatchingPeriod={50}
   windowSize={21}
 >
@@ -173,27 +147,18 @@ exports[`SectionList renders a footer when there is no data and no header 1`] = 
   onContentSizeChange={[Function]}
   onEndReachedThreshold={2}
   onLayout={[Function]}
+  onMomentumScrollBegin={[Function]}
   onMomentumScrollEnd={[Function]}
   onScroll={[Function]}
   onScrollBeginDrag={[Function]}
   onScrollEndDrag={[Function]}
   renderItem={[Function]}
-  renderSectionFooter={[Function]}
   scrollEventThrottle={50}
-  sections={
-    Array [
-      Object {
-        "data": Array [],
-        "key": "s1",
-      },
-    ]
-  }
   stickyHeaderIndices={
     Array [
       0,
     ]
   }
-  stickySectionHeadersEnabled={true}
   updateCellsBatchingPeriod={50}
   windowSize={21}
 >
@@ -219,7 +184,6 @@ exports[`SectionList renders all the bells and whistles 1`] = `
   ListEmptyComponent={[Function]}
   ListFooterComponent={[Function]}
   ListHeaderComponent={[Function]}
-  SectionSeparatorComponent={[Function]}
   data={
     Array [
       Object {
@@ -270,6 +234,7 @@ exports[`SectionList renders all the bells and whistles 1`] = `
   onContentSizeChange={[Function]}
   onEndReachedThreshold={2}
   onLayout={[Function]}
+  onMomentumScrollBegin={[Function]}
   onMomentumScrollEnd={[Function]}
   onRefresh={[MockFunction]}
   onScroll={[Function]}
@@ -283,49 +248,7 @@ exports[`SectionList renders all the bells and whistles 1`] = `
   }
   refreshing={false}
   renderItem={[Function]}
-  renderSectionFooter={[Function]}
-  renderSectionHeader={[Function]}
   scrollEventThrottle={50}
-  sections={
-    Array [
-      Object {
-        "ItemSeparatorComponent": [Function],
-        "data": Array [
-          Object {
-            "id": "i1s1",
-          },
-          Object {
-            "id": "i2s1",
-          },
-        ],
-        "key": "s1",
-        "keyExtractor": [Function],
-        "renderItem": [Function],
-      },
-      Object {
-        "data": Array [
-          Object {
-            "key": "i1s2",
-          },
-          Object {
-            "key": "i2s2",
-          },
-        ],
-        "key": "s2",
-      },
-      Object {
-        "data": Array [
-          Object {
-            "key": "i1s3",
-          },
-          Object {
-            "key": "i2s3",
-          },
-        ],
-        "key": "s3",
-      },
-    ]
-  }
   stickyHeaderIndices={
     Array [
       1,
@@ -333,7 +256,6 @@ exports[`SectionList renders all the bells and whistles 1`] = `
       9,
     ]
   }
-  stickySectionHeadersEnabled={true}
   updateCellsBatchingPeriod={50}
   windowSize={21}
 >
@@ -505,15 +427,14 @@ exports[`SectionList renders empty list 1`] = `
   onContentSizeChange={[Function]}
   onEndReachedThreshold={2}
   onLayout={[Function]}
+  onMomentumScrollBegin={[Function]}
   onMomentumScrollEnd={[Function]}
   onScroll={[Function]}
   onScrollBeginDrag={[Function]}
   onScrollEndDrag={[Function]}
   renderItem={[Function]}
   scrollEventThrottle={50}
-  sections={Array []}
   stickyHeaderIndices={Array []}
-  stickySectionHeadersEnabled={true}
   updateCellsBatchingPeriod={50}
   windowSize={21}
 >

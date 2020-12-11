@@ -8,7 +8,7 @@
  * @emails oncall+react_native
  */
 
-const deepFreezeAndThrowOnMutationInDev = require('deepFreezeAndThrowOnMutationInDev');
+const deepFreezeAndThrowOnMutationInDev = require('../deepFreezeAndThrowOnMutationInDev');
 
 describe('deepFreezeAndThrowOnMutationInDev', function() {
   it('should be a noop on non object values', () => {
@@ -28,7 +28,7 @@ describe('deepFreezeAndThrowOnMutationInDev', function() {
 
   it('should not throw on object without prototype', () => {
     __DEV__ = true;
-    var o = Object.create(null);
+    const o = Object.create(null);
     o.key = 'Value';
     expect(() => deepFreezeAndThrowOnMutationInDev(o)).not.toThrow();
   });

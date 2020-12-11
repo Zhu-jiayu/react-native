@@ -9,11 +9,9 @@
 
 'use strict';
 
-const keyOf = require('fbjs/lib/keyOf');
-
-const X_DIM = keyOf({x: null});
-const Y_DIM = keyOf({y: null});
-const Z_DIM = keyOf({z: null});
+const X_DIM = 'x';
+const Y_DIM = 'y';
+const Z_DIM = 'z';
 
 const InitialOperationField = {
   transformTranslate: [0, 0, 0],
@@ -189,17 +187,17 @@ const buildStyleInterpolator = function(anims) {
           );
           didMatrix = true;
         } else {
-          var next = computeNextValLinearScalar(anim, value);
+          const next = computeNextValLinearScalar(anim, value);
           didChange = setNextValAndDetectChange(result, name, next, didChange);
         }
       } else if (anim.type === 'constant') {
-        var next = anim.value;
+        const next = anim.value;
         didChange = setNextValAndDetectChange(result, name, next, didChange);
       } else if (anim.type === 'step') {
-        var next = value >= anim.threshold ? anim.to : anim.from;
+        const next = value >= anim.threshold ? anim.to : anim.from;
         didChange = setNextValAndDetectChange(result, name, next, didChange);
       } else if (anim.type === 'identity') {
-        var next = value;
+        const next = value;
         didChange = setNextValAndDetectChange(result, name, next, didChange);
       }
     }

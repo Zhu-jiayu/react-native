@@ -12,21 +12,21 @@
 
 const React = require('react');
 const ReactNative = require('react-native');
-const {Image, View} = ReactNative;
+const {Image} = ReactNative;
 const {TestModule} = ReactNative.NativeModules;
 
-class ImageSnapshotTest extends React.Component<{}> {
+class ImageSnapshotTest extends React.Component<{...}> {
   componentDidMount() {
     if (!TestModule.verifySnapshot) {
       throw new Error('TestModule.verifySnapshot not defined.');
     }
   }
 
-  done = (success: boolean) => {
+  done: (success: boolean) => void = (success: boolean) => {
     TestModule.markTestPassed(success);
   };
 
-  render() {
+  render(): React.Node {
     return (
       <Image
         source={require('./blue_square.png')}

@@ -9,15 +9,14 @@
 
 'use strict';
 
-var BatchedBridge = require('BatchedBridge');
-var React = require('React');
-var RecordingModule = require('NativeModules').PickerAndroidRecordingModule;
-var Picker = require('Picker');
-var View = require('View');
+const React = require('react');
+const {NativeModules, Picker, View} = require('react-native');
+const BatchedBridge = require('react-native/Libraries/BatchedBridge/BatchedBridge');
 
-var Item = Picker.Item;
+const {Recording: RecordingModule} = NativeModules;
+const Item = Picker.Item;
 
-var appInstance;
+let appInstance;
 
 class PickerAndroidTestApp extends React.Component {
   state = {
@@ -69,7 +68,7 @@ class PickerAndroidTestApp extends React.Component {
   };
 }
 
-var PickerAndroidTestModule = {
+const PickerAndroidTestModule = {
   PickerAndroidTestApp: PickerAndroidTestApp,
   selectItem: function(value) {
     appInstance.setState({selected: value});

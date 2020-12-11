@@ -9,16 +9,13 @@
 
 'use strict';
 
-var BatchedBridge = require('BatchedBridge');
-var React = require('React');
-var ReactNative = require('ReactNative');
-var View = require('View');
-var StyleSheet = require('StyleSheet');
-var UIManager = require('UIManager');
+const React = require('react');
+const {StyleSheet, UIManager, View, findNodeHandle} = require('react-native');
+const BatchedBridge = require('react-native/Libraries/BatchedBridge/BatchedBridge');
 
-var assertEquals = require('Asserts').assertEquals;
+const assertEquals = require('./Asserts').assertEquals;
 
-var styles = StyleSheet.create({
+const styles = StyleSheet.create({
   A: {
     width: 500,
     height: 500,
@@ -46,14 +43,14 @@ var styles = StyleSheet.create({
   },
 });
 
-var A, B, C, D;
+let A, B, C, D;
 
 class MeasureLayoutTestApp extends React.Component {
   componentDidMount() {
-    A = ReactNative.findNodeHandle(this.refs.A);
-    B = ReactNative.findNodeHandle(this.refs.B);
-    C = ReactNative.findNodeHandle(this.refs.C);
-    D = ReactNative.findNodeHandle(this.refs.D);
+    A = findNodeHandle(this.refs.A);
+    B = findNodeHandle(this.refs.B);
+    C = findNodeHandle(this.refs.C);
+    D = findNodeHandle(this.refs.D);
   }
 
   render() {
@@ -72,7 +69,7 @@ function shouldNotCallThisCallback() {
   assertEquals(false, true);
 }
 
-var MeasureLayoutTestModule = {
+const MeasureLayoutTestModule = {
   MeasureLayoutTestApp: MeasureLayoutTestApp,
   verifyMeasureOnViewA: function() {
     UIManager.measure(A, function(a, b, width, height, x, y) {

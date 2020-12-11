@@ -10,29 +10,23 @@
 
 'use strict';
 
-/* $FlowFixMe(>=0.54.0 site=react_native_oss) This comment suppresses an error
- * found when Flow v0.54 was deployed. To see the error delete this comment and
- * run Flow. */
-const requestAnimationFrame = require('fbjs/lib/requestAnimationFrame');
 const React = require('react');
-const PropTypes = require('prop-types');
 const ReactNative = require('react-native');
-const {Text, View} = ReactNative;
+
+const {Text, View, StyleSheet} = ReactNative;
 const {TestModule} = ReactNative.NativeModules;
 
-class IntegrationTestHarnessTest extends React.Component<
-  {
-    shouldThrow?: boolean,
-    waitOneFrame?: boolean,
-  },
-  $FlowFixMeState,
-> {
-  static propTypes = {
-    shouldThrow: PropTypes.bool,
-    waitOneFrame: PropTypes.bool,
-  };
+type Props = $ReadOnly<{|
+  shouldThrow?: boolean,
+  waitOneFrame?: boolean,
+|}>;
 
-  state = {
+type State = {|
+  done: boolean,
+|};
+
+class IntegrationTestHarnessTest extends React.Component<Props, State> {
+  state: State = {
     done: false,
   };
 
@@ -44,7 +38,7 @@ class IntegrationTestHarnessTest extends React.Component<
     }
   }
 
-  runTest = () => {
+  runTest: () => void = () => {
     if (this.props.shouldThrow) {
       throw new Error('Throwing error because shouldThrow');
     }
@@ -58,13 +52,13 @@ class IntegrationTestHarnessTest extends React.Component<
     });
   };
 
-  render() {
+  render(): React.Node {
     return (
-      <View style={{backgroundColor: 'white', padding: 40}}>
+      <View style={styles.container}>
         <Text>
           {/* $FlowFixMe(>=0.54.0 site=react_native_fb,react_native_oss) This
-             * comment suppresses an error found when Flow v0.54 was deployed.
-             * To see the error delete this comment and run Flow. */
+           * comment suppresses an error found when Flow v0.54 was deployed.
+           * To see the error delete this comment and run Flow. */
           this.constructor.displayName + ': '}
           {this.state.done ? 'Done' : 'Testing...'}
         </Text>
@@ -72,6 +66,13 @@ class IntegrationTestHarnessTest extends React.Component<
     );
   }
 }
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: 'white',
+    padding: 40,
+  },
+});
 
 IntegrationTestHarnessTest.displayName = 'IntegrationTestHarnessTest';
 

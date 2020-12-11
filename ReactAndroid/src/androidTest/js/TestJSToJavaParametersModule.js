@@ -9,10 +9,12 @@
 
 'use strict';
 
-var BatchedBridge = require('BatchedBridge');
-var Recording = require('NativeModules').Recording;
+const {NativeModules} = require('react-native');
+const BatchedBridge = require('react-native/Libraries/BatchedBridge/BatchedBridge');
 
-var TestJSToJavaParametersModule = {
+const {Recording} = NativeModules;
+
+const TestJSToJavaParametersModule = {
   returnBasicTypes: function() {
     Recording.receiveBasicTypes('foo', 3.14, true, null);
   },

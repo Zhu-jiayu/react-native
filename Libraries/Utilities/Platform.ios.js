@@ -5,38 +5,71 @@
  * LICENSE file in the root directory of this source tree.
  *
  * @format
- * @flow
+ * @flow strict
  */
 
 'use strict';
 
-const NativeModules = require('NativeModules');
+import NativePlatformConstantsIOS from './NativePlatformConstantsIOS';
+
+export type PlatformSelectSpec<D, N, I> = {
+  default?: D,
+  native?: N,
+  ios?: I,
+  ...
+};
 
 const Platform = {
+  __constants: null,
   OS: 'ios',
-  get Version() {
-    const constants = NativeModules.PlatformConstants;
-    return constants && constants.osVersion;
+  // $FlowFixMe[unsafe-getters-setters]
+  get Version(): string {
+    return this.constants.osVersion;
   },
-  get isPad() {
-    const constants = NativeModules.PlatformConstants;
-    return constants ? constants.interfaceIdiom === 'pad' : false;
+  // $FlowFixMe[unsafe-getters-setters]
+  get constants(): {|
+    forceTouchAvailable: boolean,
+    interfaceIdiom: string,
+    isTesting: boolean,
+    osVersion: string,
+    reactNativeVersion: {|
+      major: number,
+      minor: number,
+      patch: number,
+      prerelease: ?number,
+    |},
+    systemName: string,
+  |} {
+    if (this.__constants == null) {
+      this.__constants = NativePlatformConstantsIOS.getConstants();
+    }
+    return this.__constants;
+  },
+  // $FlowFixMe[unsafe-getters-setters]
+  get isPad(): boolean {
+    return this.constants.interfaceIdiom === 'pad';
   },
   /**
    * Deprecated, use `isTV` instead.
    */
-  get isTVOS() {
+  // $FlowFixMe[unsafe-getters-setters]
+  get isTVOS(): boolean {
     return Platform.isTV;
   },
-  get isTV() {
-    const constants = NativeModules.PlatformConstants;
-    return constants ? constants.interfaceIdiom === 'tv' : false;
+  // $FlowFixMe[unsafe-getters-setters]
+  get isTV(): boolean {
+    return this.constants.interfaceIdiom === 'tv';
   },
+  // $FlowFixMe[unsafe-getters-setters]
   get isTesting(): boolean {
-    const constants = NativeModules.PlatformConstants;
-    return constants && constants.isTesting;
+    if (__DEV__) {
+      return this.constants.isTesting;
+    }
+    return false;
   },
-  select: (obj: Object) => ('ios' in obj ? obj.ios : obj.default),
+  select: <D, N, I>(spec: PlatformSelectSpec<D, N, I>): D | N | I =>
+    // $FlowFixMe[incompatible-return]
+    'ios' in spec ? spec.ios : 'native' in spec ? spec.native : spec.default,
 };
 
 module.exports = Platform;

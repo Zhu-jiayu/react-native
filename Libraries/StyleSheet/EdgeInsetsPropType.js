@@ -10,20 +10,6 @@
 
 'use strict';
 
-const PropTypes = require('prop-types');
+import type {Rect} from './Rect';
 
-const EdgeInsetsPropType = PropTypes.shape({
-  top: PropTypes.number,
-  left: PropTypes.number,
-  bottom: PropTypes.number,
-  right: PropTypes.number,
-});
-
-export type EdgeInsetsProp = $ReadOnly<{|
-  top?: ?number,
-  left?: ?number,
-  bottom?: ?number,
-  right?: ?number,
-|}>;
-
-module.exports = EdgeInsetsPropType;
+export type EdgeInsetsProp = Rect;

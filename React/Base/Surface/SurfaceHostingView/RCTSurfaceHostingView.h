@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
@@ -8,13 +8,14 @@
 #import <UIKit/UIKit.h>
 
 #import <React/RCTSurfaceDelegate.h>
+#import <React/RCTSurfaceProtocol.h>
 #import <React/RCTSurfaceSizeMeasureMode.h>
 #import <React/RCTSurfaceStage.h>
 
 @class RCTBridge;
 @class RCTSurface;
 
-typedef UIView *(^RCTSurfaceHostingViewActivityIndicatorViewFactory)();
+typedef UIView *_Nullable (^RCTSurfaceHostingViewActivityIndicatorViewFactory)(void);
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -27,11 +28,18 @@ NS_ASSUME_NONNULL_BEGIN
 @interface RCTSurfaceHostingView : UIView <RCTSurfaceDelegate>
 
 /**
+ * Create an instance of RCTSurface to be hosted.
+ */
++ (RCTSurface *)createSurfaceWithBridge:(RCTBridge *)bridge
+                             moduleName:(NSString *)moduleName
+                      initialProperties:(NSDictionary *)initialProperties;
+
+/**
  * Designated initializer.
  * Instanciates a view with given Surface object.
  * Note: The view retains the surface object.
  */
-- (instancetype)initWithSurface:(RCTSurface *)surface
+- (instancetype)initWithSurface:(id<RCTSurfaceProtocol>)surface
                 sizeMeasureMode:(RCTSurfaceSizeMeasureMode)sizeMeasureMode NS_DESIGNATED_INITIALIZER;
 
 /**
@@ -45,17 +53,10 @@ NS_ASSUME_NONNULL_BEGIN
                sizeMeasureMode:(RCTSurfaceSizeMeasureMode)sizeMeasureMode;
 
 /**
- * Create an instance of RCTSurface to be hosted.
- */
-- (RCTSurface *)createSurfaceWithBridge:(RCTBridge *)bridge
-                             moduleName:(NSString *)moduleName
-                      initialProperties:(NSDictionary *)initialProperties;
-
-/**
  * Surface object which is currently using to power the view.
  * Read-only.
  */
-@property (nonatomic, strong, readonly) RCTSurface *surface;
+@property (nonatomic, strong, readonly) id<RCTSurfaceProtocol> surface;
 
 /**
  * Size measure mode which are defining relationship between UIKit and ReactNative

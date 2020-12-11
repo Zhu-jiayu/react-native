@@ -1,12 +1,13 @@
-/**
+/*
  * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
 
-#import <React/RCTPrimitives.h>
+#import <React/RCTSurfaceProtocol.h>
 #import <React/RCTSurfaceStage.h>
+#import <react/renderer/mounting/MountingCoordinator.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -33,19 +34,7 @@ NS_ASSUME_NONNULL_BEGIN
  *  * ability to create a UIView instance on demand (later);
  *  * ability to communicate the current stage of the surface granularly.
  */
-@interface RCTFabricSurface : NSObject
-
-@property (atomic, readonly) RCTSurfaceStage stage;
-@property (atomic, readonly) NSString *moduleName;
-@property (atomic, readonly) ReactTag rootTag;
-
-@property (atomic, readwrite, weak, nullable) id<RCTSurfaceDelegate> delegate;
-
-@property (atomic, copy, readwrite) NSDictionary *properties;
-
-- (instancetype)initWithBridge:(RCTBridge *)bridge
-                    moduleName:(NSString *)moduleName
-             initialProperties:(NSDictionary *)initialProperties;
+@interface RCTFabricSurface : NSObject <RCTSurfaceProtocol>
 
 - (instancetype)initWithSurfacePresenter:(RCTSurfacePresenter *)surfacePresenter
                               moduleName:(NSString *)moduleName
@@ -67,13 +56,28 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (RCTSurfaceView *)view;
 
-#pragma mark - Layout: Setting the size constrains
+#pragma mark - Start & Stop
 
 /**
- * Sets `minimumSize` and `maximumSize` layout constraints for the Surface.
+ * Starts or stops the Surface.
+ * A Surface object can be stopped and then restarted.
+ * The starting process includes initializing all underlying React Native
+ * infrastructure and running React app.
+ * Surface stops itself on deallocation automatically.
+ * Returns YES in case of success. Returns NO if the Surface is already
+ * started or stopped.
  */
-- (void)setMinimumSize:(CGSize)minimumSize
-           maximumSize:(CGSize)maximumSize;
+- (BOOL)start;
+- (BOOL)stop;
+
+/**
+ * EXPERIMENTAL
+ * Reset's the Surface to it's initial stage.
+ * It uses the passed in surface presenter, and whatever else was passed in init.
+ */
+- (void)resetWithSurfacePresenter:(RCTSurfacePresenter *)surfacePresenter;
+
+#pragma mark - Layout: Setting the size constrains
 
 /**
  * Previously set `minimumSize` layout constraint.
@@ -88,6 +92,12 @@ NS_ASSUME_NONNULL_BEGIN
 @property (atomic, assign, readonly) CGSize maximumSize;
 
 /**
+ * Previously set `viewportOffset` layout constraint.
+ * Defaults to `{0, 0}`.
+ */
+@property (atomic, assign, readonly) CGPoint viewportOffset;
+
+/**
  * Simple shortcut to `-[RCTSurface setMinimumSize:size maximumSize:size]`.
  */
 - (void)setSize:(CGSize)size;
@@ -98,8 +108,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Measures the Surface with given constraints.
  * This method does not cause any side effects on the surface object.
  */
-- (CGSize)sizeThatFitsMinimumSize:(CGSize)minimumSize
-                      maximumSize:(CGSize)maximumSize;
+- (CGSize)sizeThatFitsMinimumSize:(CGSize)minimumSize maximumSize:(CGSize)maximumSize;
 
 /**
  * Return the current size of the root view based on (but not clamp by) current
@@ -111,25 +120,31 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Synchronously blocks the current thread up to given `timeout` until
- * the Surface reaches `stage`.
- * NOT SUPPORTED IN FABRIC YET.
+ * the Surface is rendered.
  */
-- (BOOL)synchronouslyWaitForStage:(RCTSurfaceStage)stage timeout:(NSTimeInterval)timeout;
+- (BOOL)synchronouslyWaitFor:(NSTimeInterval)timeout;
 
 @end
 
 @interface RCTFabricSurface (Internal)
 
-- (void)_setStage:(RCTSurfaceStage)stage;
+/**
+ * Sets and clears given stage flags (bitmask).
+ * Returns `YES` if the actual state was changed.
+ */
+- (BOOL)_setStage:(RCTSurfaceStage)stage;
+- (BOOL)_unsetStage:(RCTSurfaceStage)stage;
 
 @end
 
 @interface RCTFabricSurface (Deprecated)
 
 /**
- * Deprecated. Use `rootTag` instead.
+ * Deprecated. Use `initWithSurfacePresenter:moduleName:initialProperties` instead.
  */
-@property (atomic, readonly) NSNumber *rootViewTag;
+- (instancetype)initWithBridge:(RCTBridge *)bridge
+                    moduleName:(NSString *)moduleName
+             initialProperties:(NSDictionary *)initialProperties;
 
 @end
 

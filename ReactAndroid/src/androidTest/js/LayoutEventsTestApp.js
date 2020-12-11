@@ -9,10 +9,10 @@
 
 'use strict';
 
-var React = require('React');
-var View = require('View');
+const React = require('react');
+const {NativeModules, StyleSheet, View} = require('react-native');
 
-var RecordingModule = require('NativeModules').Recording;
+const {Recording: RecordingModule} = NativeModules;
 
 const LAYOUT_SPECS = [
   [10, 10, 100, 100],
@@ -31,7 +31,7 @@ class LayoutEventsTestApp extends React.Component {
   }
 
   handleOnLayout = e => {
-    var layout = e.nativeEvent.layout;
+    const layout = e.nativeEvent.layout;
     RecordingModule.record(
       layout.x + ',' + layout.y + '-' + layout.width + 'x' + layout.height,
     );
@@ -61,7 +61,7 @@ class LayoutEventsTestApp extends React.Component {
       <View
         onLayout={this.handleParentOnLayout}
         testID="parent"
-        style={{left: 0, top: 0, width: 500, height: 500}}>
+        style={styles.container}>
         <View
           onLayout={this.handleOnLayout}
           testID="container"
@@ -76,5 +76,14 @@ class LayoutEventsTestApp extends React.Component {
     );
   }
 }
+
+const styles = StyleSheet.create({
+  container: {
+    left: 0,
+    top: 0,
+    width: 500,
+    height: 500,
+  },
+});
 
 module.exports = LayoutEventsTestApp;

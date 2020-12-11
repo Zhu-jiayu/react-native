@@ -4,22 +4,20 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
 'use strict';
 
-const React = require('React');
+const React = require('react');
 
-const requireNativeComponent = require('requireNativeComponent');
+import ProgressBarAndroidNativeComponent from './ProgressBarAndroidNativeComponent';
 
-import type {NativeComponent} from 'ReactNative';
-import type {ViewProps} from 'ViewPropTypes';
+import type {ViewProps} from '../View/ViewPropTypes';
+import type {ColorValue} from '../../StyleSheet/StyleSheet';
 
-const AndroidProgressBar = requireNativeComponent('AndroidProgressBar');
-
-type Props = $ReadOnly<{|
+export type ProgressBarAndroidProps = $ReadOnly<{|
   ...ViewProps,
 
   /**
@@ -52,7 +50,7 @@ type Props = $ReadOnly<{|
   /**
    * Color of the progress bar.
    */
-  color?: ?string,
+  color?: ?ColorValue,
   /**
    * Used to locate this view in end-to-end tests.
    */
@@ -83,19 +81,28 @@ type Props = $ReadOnly<{|
  * ```
  */
 const ProgressBarAndroid = (
-  props: Props,
-  forwardedRef: ?React.Ref<'AndroidProgressBar'>,
+  {
+    styleAttr = 'Normal',
+    indeterminate = true,
+    animating = true,
+    ...restProps
+  }: ProgressBarAndroidProps,
+  forwardedRef: ?React.Ref<typeof ProgressBarAndroidNativeComponent>,
 ) => {
-  return <AndroidProgressBar {...props} ref={forwardedRef} />;
+  return (
+    <ProgressBarAndroidNativeComponent
+      styleAttr={styleAttr}
+      indeterminate={indeterminate}
+      animating={animating}
+      {...restProps}
+      ref={forwardedRef}
+    />
+  );
 };
 
-// $FlowFixMe - TODO T29156721 `React.forwardRef` is not defined in Flow, yet.
 const ProgressBarAndroidToExport = React.forwardRef(ProgressBarAndroid);
 
-ProgressBarAndroidToExport.defaultProps = {
-  styleAttr: 'Normal',
-  indeterminate: true,
-  animating: true,
-};
-
-module.exports = (ProgressBarAndroidToExport: Class<NativeComponent<Props>>);
+/* $FlowFixMe(>=0.89.0 site=react_native_android_fb) This comment suppresses an
+ * error found when Flow v0.89 was deployed. To see the error, delete this
+ * comment and run Flow. */
+module.exports = (ProgressBarAndroidToExport: typeof ProgressBarAndroidNativeComponent);

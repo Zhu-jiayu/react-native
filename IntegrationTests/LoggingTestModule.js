@@ -9,10 +9,9 @@
 
 'use strict';
 
-const BatchedBridge = require('BatchedBridge');
+const BatchedBridge = require('react-native/Libraries/BatchedBridge/BatchedBridge');
 
-const warning = require('fbjs/lib/warning');
-const invariant = require('fbjs/lib/invariant');
+const invariant = require('invariant');
 
 const LoggingTestModule = {
   logToConsole: function(str) {
@@ -24,7 +23,7 @@ const LoggingTestModule = {
     }, timeout_ms);
   },
   warning: function(str) {
-    warning(false, str);
+    console.warn(str);
   },
   invariant: function(str) {
     invariant(false, str);

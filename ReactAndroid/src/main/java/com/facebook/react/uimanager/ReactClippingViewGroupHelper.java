@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
@@ -7,15 +7,14 @@
 
 package com.facebook.react.uimanager;
 
-import javax.annotation.concurrent.NotThreadSafe;
-
 import android.graphics.Rect;
 import android.view.View;
 import android.view.ViewParent;
+import javax.annotation.concurrent.NotThreadSafe;
 
 /**
- * Provides implementation of common tasks for view and it's view manager supporting property
- * {@code removeClippedSubviews}.
+ * Provides implementation of common tasks for view and it's view manager supporting property {@code
+ * removeClippedSubviews}.
  */
 @NotThreadSafe
 public class ReactClippingViewGroupHelper {
@@ -26,8 +25,8 @@ public class ReactClippingViewGroupHelper {
 
   /**
    * Can be used by view that support {@code removeClippedSubviews} property to calculate area that
-   * given {@param view} should be clipped to based on the clipping rectangle of it's parent in
-   * case when parent is also set to clip it's children.
+   * given {@param view} should be clipped to based on the clipping rectangle of it's parent in case
+   * when parent is also set to clip it's children.
    *
    * @param view view that we want to calculate clipping rect for
    * @param outputRect where the calculated rectangle will be written
@@ -43,7 +42,8 @@ public class ReactClippingViewGroupHelper {
         clippingViewGroup.getClippingRect(sHelperRect);
         // Intersect the view with the parent's rectangle
         // This will result in the overlap with coordinates in the parent space
-        if (!sHelperRect.intersect(view.getLeft(), view.getTop(), view.getRight(), view.getBottom())) {
+        if (!sHelperRect.intersect(
+            view.getLeft(), view.getTop(), view.getRight(), view.getBottom())) {
           outputRect.setEmpty();
           return;
         }
