@@ -1,44 +1,21 @@
 /**
- * Copyright (c) Facebook, Inc. and its affiliates.
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
  * @format
- * @flow
+ * @flow strict-local
  */
 
-import * as React from 'react';
-import {Text, View, StyleSheet, Image, Pressable} from 'react-native';
+import type {RNTesterTheme} from './RNTesterTheme';
 
 import {RNTesterThemeContext} from './RNTesterTheme';
+import * as React from 'react';
+import {Image, Pressable, StyleSheet, Text, View} from 'react-native';
 
-const BookmarkTab = ({handleNavBarPress, isBookmarkActive, theme}) => (
-  <View style={styles.centerBox}>
-    <Image
-      style={styles.centralBoxCutout}
-      source={require('./../assets/bottom-nav-center-box.png')}
-    />
-    <View style={styles.floatContainer}>
-      <Pressable
-        testID="bookmarks-tab"
-        onPress={() => handleNavBarPress({screen: 'bookmarks'})}>
-        <View
-          style={[styles.floatingButton, {backgroundColor: theme.BorderColor}]}>
-          <Image
-            style={styles.bookmarkIcon}
-            source={
-              isBookmarkActive
-                ? require('../assets/bottom-nav-bookmark-fill.png')
-                : require('../assets/bottom-nav-bookmark-outline.png')
-            }
-          />
-        </View>
-      </Pressable>
-    </View>
-  </View>
-);
-
+/* $FlowFixMe[missing-local-annot] The type annotation(s) required by Flow's
+ * LTI update could not be added via codemod */
 const NavbarButton = ({
   testID,
   theme,
@@ -60,33 +37,54 @@ const NavbarButton = ({
         style={iconStyle}
         source={isActive ? activeImage : inactiveImage}
       />
-      <Text style={isActive ? styles.activeText : styles.inactiveText}>
+      <Text
+        style={{
+          color: isActive
+            ? theme.NavBarLabelActiveColor
+            : theme.NavBarLabelInactiveColor,
+        }}>
         {label}
       </Text>
     </View>
   </Pressable>
 );
 
-const ComponentTab = ({isComponentActive, handleNavBarPress, theme}) => (
+const ComponentTab = ({
+  isComponentActive,
+  handleNavBarPress,
+  theme,
+}: $TEMPORARY$object<{
+  handleNavBarPress: (data: {screen: string}) => void,
+  isComponentActive: boolean,
+  theme: RNTesterTheme,
+}>) => (
   <NavbarButton
     testID="components-tab"
     label="Components"
     handlePress={() => handleNavBarPress({screen: 'components'})}
-    activeImage={require('./../assets/bottom-nav-components-icon-active.png')}
-    inactiveImage={require('./../assets/bottom-nav-components-icon-inactive.png')}
+    activeImage={theme.NavBarComponentsActiveIcon}
+    inactiveImage={theme.NavBarComponentsInactiveIcon}
     isActive={isComponentActive}
     theme={theme}
     iconStyle={styles.componentIcon}
   />
 );
 
-const APITab = ({isAPIActive, handleNavBarPress, theme}) => (
+const APITab = ({
+  isAPIActive,
+  handleNavBarPress,
+  theme,
+}: $TEMPORARY$object<{
+  handleNavBarPress: (data: {screen: string}) => void,
+  isAPIActive: boolean,
+  theme: RNTesterTheme,
+}>) => (
   <NavbarButton
     testID="apis-tab"
     label="APIs"
     handlePress={() => handleNavBarPress({screen: 'apis'})}
-    activeImage={require('./../assets/bottom-nav-apis-icon-active.png')}
-    inactiveImage={require('./../assets/bottom-nav-apis-icon-inactive.png')}
+    activeImage={theme.NavBarAPIsActiveIcon}
+    inactiveImage={theme.NavBarAPIsInactiveIcon}
     isActive={isAPIActive}
     theme={theme}
     iconStyle={styles.apiIcon}
@@ -108,18 +106,12 @@ const RNTesterNavbar = ({
 
   const isAPIActive = screen === 'apis' && !isExamplePageOpen;
   const isComponentActive = screen === 'components' && !isExamplePageOpen;
-  const isBookmarkActive = screen === 'bookmarks' && !isExamplePageOpen;
 
   return (
     <View>
       <View style={styles.buttonContainer}>
         <ComponentTab
           isComponentActive={isComponentActive}
-          handleNavBarPress={handleNavBarPress}
-          theme={theme}
-        />
-        <BookmarkTab
-          isBookmarkActive={isBookmarkActive}
           handleNavBarPress={handleNavBarPress}
           theme={theme}
         />
@@ -132,6 +124,8 @@ const RNTesterNavbar = ({
     </View>
   );
 };
+
+export const navBarHeight = 65;
 
 const styles = StyleSheet.create({
   floatContainer: {
@@ -158,11 +152,6 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 5,
   },
-  bookmarkIcon: {
-    width: 30,
-    height: 30,
-    margin: 10,
-  },
   componentIcon: {
     width: 20,
     height: 20,
@@ -172,12 +161,6 @@ const styles = StyleSheet.create({
     width: 30,
     height: 20,
     alignSelf: 'center',
-  },
-  activeText: {
-    color: '#5E5F62',
-  },
-  inactiveText: {
-    color: '#B1B4BA',
   },
   activeBar: {
     borderTopWidth: 2,
@@ -191,11 +174,11 @@ const styles = StyleSheet.create({
   },
   centerBox: {
     flex: 1,
-    height: 65,
+    height: navBarHeight,
   },
   navButton: {
     flex: 1,
-    height: 65,
+    height: navBarHeight,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -207,4 +190,4 @@ const styles = StyleSheet.create({
   },
 });
 
-module.exports = RNTesterNavbar;
+export default RNTesterNavbar;

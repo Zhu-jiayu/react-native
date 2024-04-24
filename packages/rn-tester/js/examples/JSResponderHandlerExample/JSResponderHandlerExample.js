@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Facebook, Inc. and its affiliates.
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -8,13 +8,10 @@
  * @flow strict-local
  */
 
-'use strict';
+import {PanResponder, ScrollView} from 'react-native';
 
 const React = require('react');
-
-const {Text, View, StyleSheet} = require('react-native');
-
-import {PanResponder, ScrollView} from 'react-native';
+const {StyleSheet, Text, View} = require('react-native');
 
 exports.displayName = 'JSResponderHandlerExample';
 exports.framework = 'React';
@@ -31,18 +28,19 @@ const _gesture = PanResponder.create({
 exports.examples = [
   {
     title: 'JSResponderHandlerExample',
-    description: ('This example tests the native JSResponderHandler: when the user ' +
-      'scrolls on the right side of the ScrollView (white area located on the' +
-      ' right side of the gray area), the touch event is managed by native ' +
-      'which blocks the scroll event.': string),
+    description:
+      ('This example tests the native JSResponderHandler: when the user ' +
+        'scrolls on the right side of the ScrollView (white area located on the' +
+        ' right side of the gray area), the touch event is managed by native ' +
+        'which blocks the scroll event.': string),
 
-    render: function(): React.Node {
+    render: function (): React.Node {
       const views = [];
       for (let i = 0; i < 100; i++) {
         views[i] = (
           <View key={i} style={styles.row} collapsable={false}>
             <View style={styles.touchable_area} collapsable={false}>
-              <Text>I am row {i}</Text>
+              <Text testID="row_js_responder_handler">I am row {i}</Text>
             </View>
           </View>
         );

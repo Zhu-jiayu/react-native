@@ -1,26 +1,45 @@
 /**
- * Copyright (c) Facebook, Inc. and its affiliates.
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
 'use strict';
 
 import type {
-  NamedShape,
+  CommandParamTypeAnnotation,
   CommandTypeAnnotation,
+  NamedShape,
 } from '../../../CodegenSchema.js';
-import type {TypeDeclarationMap} from '../utils.js';
+import type {TypeDeclarationMap} from '../../utils';
 
 const {getValueFromTypes} = require('../utils.js');
 
+// $FlowFixMe[unclear-type] there's no flowtype for ASTs
 type EventTypeAST = Object;
 
-function buildCommandSchema(property, types: TypeDeclarationMap) {
+function buildCommandSchema(
+  property: EventTypeAST,
+  types: TypeDeclarationMap,
+): $ReadOnly<{
+  name: string,
+  optional: boolean,
+  typeAnnotation: {
+    type: 'FunctionTypeAnnotation',
+    params: $ReadOnlyArray<{
+      name: string,
+      optional: boolean,
+      typeAnnotation: CommandParamTypeAnnotation,
+    }>,
+    returnTypeAnnotation: {
+      type: 'VoidTypeAnnotation',
+    },
+  },
+}> {
   const name = property.key.name;
   const optional = property.optional;
   const value = getValueFromTypes(property.value, types);
@@ -47,7 +66,7 @@ function buildCommandSchema(property, types: TypeDeclarationMap) {
       paramValue.type === 'GenericTypeAnnotation'
         ? paramValue.id.name
         : paramValue.type;
-    let returnType;
+    let returnType: CommandParamTypeAnnotation;
 
     switch (type) {
       case 'RootTag':
@@ -76,6 +95,35 @@ function buildCommandSchema(property, types: TypeDeclarationMap) {
           type: 'FloatTypeAnnotation',
         };
         break;
+      case 'StringTypeAnnotation':
+        returnType = {
+          type: 'StringTypeAnnotation',
+        };
+        break;
+      case 'Array':
+      case '$ReadOnlyArray':
+        if (!paramValue.type === 'GenericTypeAnnotation') {
+          throw new Error(
+            'Array and $ReadOnlyArray are GenericTypeAnnotation for array',
+          );
+        }
+        returnType = {
+          type: 'ArrayTypeAnnotation',
+          elementType: {
+            // TODO: T172453752 support complex type annotation for array element
+            type: paramValue.typeParameters.params[0].type,
+          },
+        };
+        break;
+      case 'ArrayTypeAnnotation':
+        returnType = {
+          type: 'ArrayTypeAnnotation',
+          elementType: {
+            // TODO: T172453752 support complex type annotation for array element
+            type: paramValue.elementType.type,
+          },
+        };
+        break;
       default:
         (type: empty);
         throw new Error(
@@ -85,6 +133,7 @@ function buildCommandSchema(property, types: TypeDeclarationMap) {
 
     return {
       name: paramName,
+      optional: false,
       typeAnnotation: returnType,
     };
   });

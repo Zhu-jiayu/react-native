@@ -1,12 +1,12 @@
 #!/bin/bash
-# Copyright (c) Facebook, Inc. and its affiliates.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
 # This script assumes yarn is already installed.
 
-THIS_DIR=$(cd -P "$(dirname "$(readlink "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")")" && pwd)
+THIS_DIR=$(cd -P "$(dirname "$(realpath "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")")" && pwd)
 
 set -e
 set -u
@@ -23,6 +23,21 @@ else
 fi
 YARN_BINARY="${YARN_BINARY:-$YARN_OR_NPM}"
 
+# mv command to use when copying files into the working directory
+EDEN_SAFE_MV="mv"
+
+if [ -x "$(command -v eden)" ]; then
+  pushd "$THIS_DIR"
+
+  # Detect if we are in an EdenFS checkout, but be sure to use /bin/cp
+  # incase users have GNU coreutils installed which is incompatible with -X
+  if [[ "$OSTYPE" == "darwin"* ]] && eden info; then
+    EDEN_SAFE_MV="/bin/cp -R -X"
+  fi
+
+  popd >/dev/null
+fi
+
 if [[ ${FBSOURCE_ENV:-0} -eq 1 ]]; then
   # Custom FB-specific setup
   pushd "$CODEGEN_DIR" >/dev/null
@@ -32,12 +47,22 @@ if [[ ${FBSOURCE_ENV:-0} -eq 1 ]]; then
   "$YARN_BINARY" run build
 
   popd >/dev/null
+
 else
   # Run yarn install in a separate tmp dir to avoid conflict with the rest of the repo.
   # Note: OSS-only.
   TMP_DIR=$(mktemp -d)
 
-  cp -R "$CODEGEN_DIR/." "$TMP_DIR"
+  # On Windows this script gets run by a seprate Git Bash instance, which cannot perform the copy
+  # due to file locks created by the host process. Need to exclude .lock files while copying.
+  # Using in-memory tar operation because piping `find` and `grep` doesn't preserve folder structure
+  # during recursive copying, and `rsync` is not installed by default in Git Bash.
+  # As an added benefit, blob copy is faster.
+  if [ "$OSTYPE" = "msys" ] || [ "$OSTYPE" = "cygwin" ]; then
+    tar cf - --exclude='*.lock' "$CODEGEN_DIR" | (cd "$TMP_DIR" && tar xvf - );
+  else
+    /bin/cp -R "$CODEGEN_DIR/." "$TMP_DIR";
+  fi
 
   pushd "$TMP_DIR" >/dev/null
 
@@ -46,6 +71,7 @@ else
 
   popd >/dev/null
 
-  mv "$TMP_DIR/lib" "$TMP_DIR/node_modules" "$CODEGEN_DIR"
+  $EDEN_SAFE_MV "$TMP_DIR/lib" "$CODEGEN_DIR"
+  $EDEN_SAFE_MV "$TMP_DIR/node_modules" "$CODEGEN_DIR"
   rm -rf "$TMP_DIR"
 fi

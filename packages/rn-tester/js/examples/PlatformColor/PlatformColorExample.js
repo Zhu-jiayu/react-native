@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Facebook, Inc. and its affiliates.
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -8,16 +8,18 @@
  * @flow
  */
 
-'use strict';
+import Platform from 'react-native/Libraries/Utilities/Platform';
 
 const React = require('react');
 const ReactNative = require('react-native');
-import Platform from 'react-native/Libraries/Utilities/Platform';
 const {DynamicColorIOS, PlatformColor, StyleSheet, Text, View} = ReactNative;
 
 function PlatformColorsExample() {
   function createTable() {
-    let colors = [];
+    let colors: Array<{
+      color: ReturnType<typeof PlatformColor>,
+      label: string,
+    }> = [];
     if (Platform.OS === 'ios') {
       colors = [
         // https://developer.apple.com/documentation/uikit/uicolor/ui_element_colors
@@ -112,6 +114,7 @@ function PlatformColorsExample() {
         {label: 'systemGray6', color: PlatformColor('systemGray6')},
         // Transparent Color
         {label: 'clear', color: PlatformColor('clear')},
+        {label: 'customColor', color: PlatformColor('customColor')},
       ];
     } else if (Platform.OS === 'android') {
       colors = [
@@ -215,6 +218,7 @@ function FallbackColorsExample() {
           style={{
             ...styles.colorCell,
             backgroundColor: color.color,
+            borderColor: color.color,
           }}
         />
       </View>
@@ -235,6 +239,20 @@ function DynamicColorsExample() {
           style={{
             ...styles.colorCell,
             backgroundColor: DynamicColorIOS({light: 'red', dark: 'blue'}),
+          }}
+        />
+      </View>
+      <View style={styles.row}>
+        <Text style={styles.labelCell}>
+          DynamicColorIOS({'{\n'}
+          {'  '}light: 'red', dark: 'blue'{'\n'}
+          {'}'})
+        </Text>
+        <View
+          style={{
+            ...styles.colorCell,
+            borderColor: DynamicColorIOS({light: 'red', dark: 'blue'}),
+            borderWidth: 1,
           }}
         />
       </View>
@@ -279,8 +297,8 @@ function VariantColorsExample() {
               Platform.OS === 'ios'
                 ? DynamicColorIOS({light: 'red', dark: 'blue'})
                 : Platform.OS === 'android'
-                ? PlatformColor('?attr/colorAccent')
-                : 'red',
+                  ? PlatformColor('?attr/colorAccent')
+                  : 'red',
           }}
         />
       </View>

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Facebook, Inc. and its affiliates.
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -8,14 +8,12 @@
  * @flow
  */
 
-'use strict';
+import type {Element, Node} from 'react';
 
 import React, {useEffect, useState} from 'react';
-import {Animated, StyleSheet, Text, View} from 'react-native';
+import {Animated, Easing, StyleSheet, Text, View} from 'react-native';
 
-import type {Node, Element} from 'react';
-
-function AnimateTansformSingleProp() {
+function AnimateTransformSingleProp() {
   const [theta] = useState(new Animated.Value(45));
   const animate = () => {
     theta.setValue(0);
@@ -40,9 +38,6 @@ function AnimateTansformSingleProp() {
               {
                 rotate: theta.interpolate({
                   inputRange: [0, 100],
-                  /* $FlowFixMe(>=0.38.0) - Flow error detected during the
-                   * deployment of v0.38.0. To see the error, remove this
-                   * comment and run flow */
                   outputRange: ['0deg', '360deg'],
                 }),
               },
@@ -51,6 +46,39 @@ function AnimateTansformSingleProp() {
         ]}>
         <Text style={styles.flipText}>This text is flipping great.</Text>
       </Animated.View>
+    </View>
+  );
+}
+
+function TransformOriginExample() {
+  const rotateAnim = React.useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 5000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    ).start();
+  }, [rotateAnim]);
+
+  const spin = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  return (
+    <View style={styles.transformOriginWrapper}>
+      <Animated.View
+        style={[
+          styles.transformOriginView,
+          {
+            transform: [{rotate: spin}],
+          },
+        ]}
+      />
     </View>
   );
 }
@@ -81,9 +109,6 @@ function Flip() {
               {
                 rotateX: theta.interpolate({
                   inputRange: [0, 180],
-                  /* $FlowFixMe(>=0.38.0) - Flow error detected during the
-                   * deployment of v0.38.0. To see the error, remove this
-                   * comment and run flow */
                   outputRange: ['0deg', '180deg'],
                 }),
               },
@@ -102,9 +127,6 @@ function Flip() {
               {
                 rotateX: theta.interpolate({
                   inputRange: [0, 180],
-                  /* $FlowFixMe(>=0.38.0) - Flow error detected during the
-                   * deployment of v0.38.0. To see the error, remove this
-                   * comment and run flow */
                   outputRange: ['180deg', '360deg'],
                 }),
               },
@@ -210,10 +232,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'salmon',
     alignSelf: 'center',
   },
+  box7: {
+    backgroundColor: 'lightseagreen',
+    height: 50,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: 50,
+  },
+  box7Transform: {
+    transform: 'translate(-50px, 35px) rotate(50deg) scale(2)',
+  },
   flipCardContainer: {
     marginVertical: 40,
     flex: 1,
     alignSelf: 'center',
+    zIndex: 0,
   },
   flipCard: {
     width: 200,
@@ -233,6 +267,15 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: 'white',
     fontWeight: 'bold',
+  },
+  transformOriginWrapper: {
+    alignItems: 'center',
+  },
+  transformOriginView: {
+    backgroundColor: 'pink',
+    width: 100,
+    height: 100,
+    transformOrigin: 'top left',
   },
 });
 
@@ -329,10 +372,28 @@ exports.examples = [
     },
   },
   {
-    title: 'Amimate Translate single prop',
+    title: 'Animate Translate single prop',
     description: "rotate: '360deg'",
     render(): Node {
-      return <AnimateTansformSingleProp />;
+      return <AnimateTransformSingleProp />;
+    },
+  },
+  {
+    title: 'Transform using a string',
+    description: "transform: 'translate(-50px, 35px) rotate(50deg) scale(2)'",
+    render(): Node {
+      return (
+        <View style={styles.container}>
+          <View style={[styles.box7, styles.box7Transform]} />
+        </View>
+      );
+    },
+  },
+  {
+    title: 'Transform origin',
+    description: "transformOrigin: 'top left'",
+    render(): Node {
+      return <TransformOriginExample />;
     },
   },
 ];

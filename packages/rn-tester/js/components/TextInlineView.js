@@ -1,17 +1,16 @@
 /**
- * Copyright (c) Facebook, Inc. and its affiliates.
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
  * @format
- * @flow
+ * @flow strict-local
  */
 
 'use strict';
 
 const React = require('react');
-
 const {Image, Text, TouchableHighlight, View} = require('react-native');
 
 function Basic(): React.Node {
@@ -107,7 +106,7 @@ type ChangeSizeState = {|
   width: number,
 |};
 
-class ChangeImageSize extends React.Component<*, ChangeSizeState> {
+class ChangeImageSize extends React.Component<mixed, ChangeSizeState> {
   state: ChangeSizeState = {
     width: 50,
   };
@@ -143,7 +142,7 @@ class ChangeImageSize extends React.Component<*, ChangeSizeState> {
   }
 }
 
-class ChangeViewSize extends React.Component<*, ChangeSizeState> {
+class ChangeViewSize extends React.Component<mixed, ChangeSizeState> {
   state: ChangeSizeState = {
     width: 50,
   };
@@ -175,7 +174,7 @@ class ChangeViewSize extends React.Component<*, ChangeSizeState> {
   }
 }
 
-class ChangeInnerViewSize extends React.Component<*, ChangeSizeState> {
+class ChangeInnerViewSize extends React.Component<mixed, ChangeSizeState> {
   state: ChangeSizeState = {
     width: 50,
   };

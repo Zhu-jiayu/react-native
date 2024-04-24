@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Facebook, Inc. and its affiliates.
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -8,12 +8,10 @@
  * @flow strict-local
  */
 
-'use strict';
+import {RNTesterThemeContext} from './RNTesterTheme';
 
 const React = require('react');
-
 const {StyleSheet, Text, View} = require('react-native');
-import {RNTesterThemeContext} from './RNTesterTheme';
 
 class RNTesterTitle extends React.Component<$FlowFixMeProps> {
   render(): React.Node {
@@ -26,7 +24,7 @@ class RNTesterTitle extends React.Component<$FlowFixMeProps> {
                 styles.container,
                 {
                   borderColor: theme.SeparatorColor,
-                  backgroundColor: theme.SystemBackgroundColor,
+                  backgroundColor: theme.TertiaryGroupedBackgroundColor,
                 },
               ]}>
               <Text style={[styles.text, {color: theme.LabelColor}]}>

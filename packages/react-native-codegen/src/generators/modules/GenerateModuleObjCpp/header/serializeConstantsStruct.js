@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Facebook, Inc. and its affiliates.
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -10,17 +10,17 @@
 
 'use strict';
 
-const {
-  capitalize,
-  getSafePropertyName,
-  getNamespacedStructName,
-} = require('../Utils');
-
 import type {Nullable} from '../../../../CodegenSchema';
-import type {StructTypeAnnotation, ConstantsStruct} from '../StructCollector';
+import type {ConstantsStruct, StructTypeAnnotation} from '../StructCollector';
 import type {StructSerilizationOutput} from './serializeStruct';
 
-const {unwrapNullable} = require('../../../../parsers/flow/modules/utils');
+const {unwrapNullable} = require('../../../../parsers/parsers-commons');
+const {wrapOptional: wrapCxxOptional} = require('../../../TypeUtils/Cxx');
+const {
+  wrapOptional: wrapObjCOptional,
+} = require('../../../TypeUtils/Objective-C');
+const {capitalize} = require('../../../Utils');
+const {getNamespacedStructName, getSafePropertyName} = require('../Utils');
 
 const StructTemplate = ({
   hasteModuleName,
@@ -82,15 +82,12 @@ function toObjCType(
 ): string {
   const [typeAnnotation, nullable] = unwrapNullable(nullableTypeAnnotation);
   const isRequired = !nullable && !isOptional;
-  const wrapFollyOptional = (type: string) => {
-    return isRequired ? type : `folly::Optional<${type}>`;
-  };
 
   switch (typeAnnotation.type) {
     case 'ReservedTypeAnnotation':
       switch (typeAnnotation.name) {
         case 'RootTag':
-          return wrapFollyOptional('double');
+          return wrapCxxOptional('double', isRequired);
         default:
           (typeAnnotation.name: empty);
           throw new Error(`Unknown prop type, found: ${typeAnnotation.name}"`);
@@ -98,27 +95,39 @@ function toObjCType(
     case 'StringTypeAnnotation':
       return 'NSString *';
     case 'NumberTypeAnnotation':
-      return wrapFollyOptional('double');
+      return wrapCxxOptional('double', isRequired);
     case 'FloatTypeAnnotation':
-      return wrapFollyOptional('double');
+      return wrapCxxOptional('double', isRequired);
     case 'Int32TypeAnnotation':
-      return wrapFollyOptional('double');
+      return wrapCxxOptional('double', isRequired);
     case 'DoubleTypeAnnotation':
-      return wrapFollyOptional('double');
+      return wrapCxxOptional('double', isRequired);
     case 'BooleanTypeAnnotation':
-      return wrapFollyOptional('bool');
+      return wrapCxxOptional('bool', isRequired);
+    case 'EnumDeclaration':
+      switch (typeAnnotation.memberType) {
+        case 'NumberTypeAnnotation':
+          return wrapCxxOptional('double', isRequired);
+        case 'StringTypeAnnotation':
+          return 'NSString *';
+        default:
+          throw new Error(
+            `Couldn't convert enum into ObjC type: ${typeAnnotation.type}"`,
+          );
+      }
     case 'GenericObjectTypeAnnotation':
-      return isRequired ? 'id<NSObject> ' : 'id<NSObject> _Nullable ';
+      return wrapObjCOptional('id<NSObject>', isRequired);
     case 'ArrayTypeAnnotation':
       if (typeAnnotation.elementType == null) {
-        return isRequired ? 'id<NSObject> ' : 'id<NSObject> _Nullable ';
+        return wrapObjCOptional('id<NSObject>', isRequired);
       }
 
-      return wrapFollyOptional(
+      return wrapCxxOptional(
         `std::vector<${toObjCType(
           hasteModuleName,
           typeAnnotation.elementType,
         )}>`,
+        isRequired,
       );
     case 'TypeAliasTypeAnnotation':
       const structName = capitalize(typeAnnotation.name);
@@ -126,7 +135,7 @@ function toObjCType(
         hasteModuleName,
         structName,
       );
-      return wrapFollyOptional(`${namespacedStructName}::Builder`);
+      return wrapCxxOptional(`${namespacedStructName}::Builder`, isRequired);
     default:
       (typeAnnotation.type: empty);
       throw new Error(
@@ -147,7 +156,7 @@ function toObjCValue(
 
   function wrapPrimitive(type: string) {
     return !isRequired
-      ? `${value}.hasValue() ? @((${type})${value}.value()) : nil`
+      ? `${value}.has_value() ? @((${type})${value}.value()) : nil`
       : `@(${value})`;
   }
 
@@ -174,6 +183,17 @@ function toObjCValue(
       return wrapPrimitive('double');
     case 'BooleanTypeAnnotation':
       return wrapPrimitive('BOOL');
+    case 'EnumDeclaration':
+      switch (typeAnnotation.memberType) {
+        case 'NumberTypeAnnotation':
+          return wrapPrimitive('double');
+        case 'StringTypeAnnotation':
+          return value;
+        default:
+          throw new Error(
+            `Couldn't convert enum into ObjC value: ${typeAnnotation.type}"`,
+          );
+      }
     case 'GenericObjectTypeAnnotation':
       return value;
     case 'ArrayTypeAnnotation':
@@ -191,7 +211,7 @@ function toObjCValue(
         depth + 1,
       );
 
-      const RCTConvertVecToArray = transformer => {
+      const RCTConvertVecToArray = (transformer: string) => {
         return `RCTConvert${
           !isRequired ? 'Optional' : ''
         }VecToArray(${value}, ${transformer})`;
@@ -202,7 +222,7 @@ function toObjCValue(
       );
     case 'TypeAliasTypeAnnotation':
       return !isRequired
-        ? `${value}.hasValue() ? ${value}.value().buildUnsafeRawValue() : nil`
+        ? `${value}.has_value() ? ${value}.value().buildUnsafeRawValue() : nil`
         : `${value}.buildUnsafeRawValue()`;
     default:
       (typeAnnotation.type: empty);
@@ -222,15 +242,15 @@ function serializeConstantsStruct(
     builderInputProps: struct.properties
       .map(property => {
         const {typeAnnotation, optional} = property;
-        const propName = getSafePropertyName(property);
+        const safePropName = getSafePropertyName(property);
         const objCType = toObjCType(hasteModuleName, typeAnnotation, optional);
 
         if (!optional) {
-          return `RCTRequired<${objCType}> ${propName};`;
+          return `RCTRequired<${objCType}> ${safePropName};`;
         }
 
         const space = ' '.repeat(objCType.endsWith('*') ? 0 : 1);
-        return `${objCType}${space}${propName};`;
+        return `${objCType}${space}${safePropName};`;
       })
       .join('\n          '),
   });
@@ -240,17 +260,17 @@ function serializeConstantsStruct(
     structName: struct.name,
     properties: struct.properties
       .map(property => {
-        const {typeAnnotation, optional} = property;
-        const propName = getSafePropertyName(property);
+        const {typeAnnotation, optional, name: propName} = property;
+        const safePropName = getSafePropertyName(property);
         const objCValue = toObjCValue(
           hasteModuleName,
           typeAnnotation,
-          propName,
+          safePropName,
           0,
           optional,
         );
 
-        let varDecl = `auto ${propName} = i.${propName}`;
+        let varDecl = `auto ${safePropName} = i.${safePropName}`;
         if (!optional) {
           varDecl += '.get()';
         }
